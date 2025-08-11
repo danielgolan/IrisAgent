@@ -1,0 +1,55 @@
+/* Header styles */
+.app-header {
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  color: #fff;
+  padding: 40px 48px 48px;
+  position: relative;
+  box-shadow: 0 20px 60px -12px rgba(25, 118, 210, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 36px;
+  margin: 16px 24px 24px 16px;
+  z-index: 1000;
+}
+
+.app-header:before,
+.app-header:after {
+  content: "";
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0) 70%
+  );
+  top: -200px;
+  right: -180px;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.app-header:after {
+  top: auto;
+  bottom: -250px;
+  left: -220px;
+  right: auto;
+  opacity: 0.6;
+}
+
+.header-search-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  z-index: 1001;
+}
+
+/* Ensure search dropdown has proper z-index in header context */
+.header-search-container .search-dropdown-container {
+  z-index: 1002;
+}
+
+.header-search-container .search-suggestions-dropdown {
+  z-index: 1003 !important;
+}

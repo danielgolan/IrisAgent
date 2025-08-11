@@ -1,0 +1,400 @@
+/* Root spacing */
+.homepage-root {
+  padding-top: 16px;
+  padding-bottom: 64px;
+  padding-left: 16px;
+  padding-right: 32px;
+}
+
+/* Status cards grid */
+.modern-status-cards {
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 1;
+  gap: 24px; /* increased spacing between cards */
+  justify-content: space-evenly; /* distribute cards evenly */
+  display: flex; /* make this a flex container */
+  flex-wrap: wrap; /* allow wrapping on smaller screens */
+}
+
+/* Individual status card */
+.status-card {
+  padding: 24px 26px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  cursor: pointer;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafb 100%);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  flex: 1; /* make all cards equal width */
+  min-width: 0; /* prevent overflow issues */
+}
+
+.status-card:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.1), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.status-card:hover {
+  box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.18);
+}
+.status-card:hover:before {
+  opacity: 1;
+}
+
+.status-card.selected {
+  border-color: #1976d2;
+  box-shadow: 0 12px 32px -8px rgba(25, 118, 210, 0.4);
+  background: linear-gradient(145deg, #ffffff 0%, #f0f4ff 100%);
+}
+
+.status-card-icon svg {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+.status-card-value {
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  background: linear-gradient(135deg, #2d3748, #4a5568);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.status-card-label {
+  color: #718096;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 10px;
+}
+
+/* Recent cases */
+.modern-recent-cases {
+  margin-bottom: 48px;
+}
+
+.recent-cases-card {
+  padding: 0; /* removed padding to extend gradient upwards */
+  border-radius: 40px; /* increased border radius for more rounded corners */
+  background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 0 16px 48px -16px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.recent-cases-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px 12px; /* increased top padding to extend gradient upwards */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, #f7faff 0%, #ffffff 100%);
+  position: relative;
+}
+
+/* Enhanced table styles for recent cases */
+.recent-cases-card .MuiTableContainer-root {
+  background: transparent;
+}
+
+.recent-cases-card .MuiTableHead-root .MuiTableCell-root {
+  background: linear-gradient(135deg, #f7faff 0%, #ffffff 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 12px 16px;
+}
+
+.recent-cases-card .MuiTableBody-root .MuiTableRow-root {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.recent-cases-card .MuiTableBody-root .MuiTableRow-root:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 118, 210, 0.04) 0%,
+    rgba(66, 165, 245, 0.04) 100%
+  );
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px rgba(25, 118, 210, 0.15);
+}
+
+.recent-cases-card .MuiTableCell-root {
+  padding: 12px 16px;
+  border-bottom: none;
+}
+
+.recent-cases-card .MuiLinearProgress-root {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.recent-cases-card .MuiAvatar-root {
+  background: linear-gradient(135deg, #1976d2, #42a5f5);
+  font-weight: 600;
+}
+
+.recent-cases-card .MuiSelect-select {
+  background: transparent;
+}
+
+.recent-cases-card .MuiSelect-outlined {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+}
+
+.recent-cases-card .MuiSelect-outlined:hover {
+  border-color: #1976d2;
+}
+
+.recent-cases-list {
+  padding: 4px 0;
+}
+
+.recent-case-item {
+  transition: background 0.2s ease, padding-left 0.2s ease;
+  padding-left: 26px;
+  padding-right: 26px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px; /* added rounded corners to individual case items */
+  margin: 4px 8px; /* added margin for spacing between items */
+}
+
+.recent-case-item:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(135deg, #1976d2, #42a5f5);
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+
+.recent-case-item:hover {
+  background: linear-gradient(135deg, #f0f4ff 0%, #fafbff 100%);
+  padding-left: 32px;
+}
+
+.recent-case-item:hover:before {
+  transform: scaleX(1);
+}
+
+.recent-case-primary {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: linear-gradient(135deg, #2d3748, #4a5568);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.recent-case-secondary {
+  color: #1976d2;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+@media (max-width: 900px) {
+  .modern-hero {
+    padding: 32px 32px 40px; /* reduced padding for medium screens */
+  }
+  .recent-cases-card {
+    border-radius: 32px; /* slightly less rounded on medium screens */
+  }
+  .status-card {
+    border-radius: 24px;
+  }
+  .modern-status-cards {
+    gap: 16px; /* reduced gap for medium screens */
+  }
+}
+
+@media (max-width: 600px) {
+  .modern-hero {
+    padding: 28px 24px 36px; /* reduced padding for mobile */
+  }
+  .status-card {
+    padding: 20px 20px;
+  }
+  .modern-status-cards {
+    margin-top: 16px;
+    gap: 12px; /* smaller gap for mobile */
+    flex-direction: column; /* stack cards vertically on mobile */
+  }
+}
+
+/* Additional modern touches */
+.homepage-root {
+  padding-top: 16px;
+  padding-bottom: 64px;
+  padding-left: 16px;
+  padding-right: 32px;
+  position: relative;
+}
+
+.homepage-root:before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+      circle at 20% 20%,
+      rgba(25, 118, 210, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(66, 165, 245, 0.05) 0%,
+      transparent 50%
+    );
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus states for accessibility */
+.status-card:focus,
+.recent-case-item:focus {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
+.status-card,
+.recent-cases-card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Improve text rendering */
+.status-card-value,
+.recent-case-primary,
+.modern-hero-title {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Search dropdown styles */
+.search-dropdown-container {
+  position: relative;
+  z-index: 99998;
+}
+
+.search-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  border-radius: 20px;
+  overflow: hidden;
+  max-height: 400px;
+  overflow-y: auto;
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px -12px rgba(25, 118, 210, 0.4);
+  z-index: 99999 !important;
+}
+
+.search-suggestion-item {
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  margin: 0 8px;
+}
+
+.search-suggestion-item:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 118, 210, 0.08) 0%,
+    rgba(66, 165, 245, 0.08) 100%
+  );
+  transform: translateX(4px);
+}
+
+.search-suggestion-item.selected {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 118, 210, 0.12) 0%,
+    rgba(66, 165, 245, 0.12) 100%
+  );
+  transform: translateX(4px);
+}
+
+.search-suggestion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(25, 118, 210, 0.1);
+  margin-right: 12px;
+}
+
+.search-history-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+/* Loading animation for search */
+@keyframes searchPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.search-loading {
+  animation: searchPulse 1.5s ease-in-out infinite;
+}
+
+/* Enhanced search input focus states */
+.modern-search .MuiTextField-root:focus-within {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+/* Search results highlighting */
+.search-highlight {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #e65100;
+}
+
+/* Mobile search optimizations */
+@media (max-width: 600px) {
+  .search-suggestions-dropdown {
+    max-height: 300px;
+    border-radius: 16px;
+  }
+
+  .search-suggestion-item {
+    margin: 0 4px;
+    border-radius: 8px;
+  }
+}
