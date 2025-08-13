@@ -100,17 +100,23 @@ const createVerificationStep = (id, title, description, icon, caseData) => {
     },
     damage_assessment: {
       status:
-        caseData.images?.length > 0 && caseData.dateOfIncident
+        caseData.imagesStatus === "Approved" && caseData.dateOfIncident
           ? "success"
+          : caseData.imagesStatus === "Declined"
+          ? "error"
           : "warning",
-      autoCheck: caseData.images?.length > 0 && caseData.dateOfIncident,
+      autoCheck: caseData.imagesStatus === "Approved" && caseData.dateOfIncident,
       chipLabel:
-        caseData.images?.length > 0 && caseData.dateOfIncident
+        caseData.imagesStatus === "Approved" && caseData.dateOfIncident
           ? "Auto-verified"
+          : caseData.imagesStatus === "Declined"
+          ? "Declined"
           : "Pending",
       chipColor:
-        caseData.images?.length > 0 && caseData.dateOfIncident
+        caseData.imagesStatus === "Approved" && caseData.dateOfIncident
           ? "success"
+          : caseData.imagesStatus === "Declined"
+          ? "error"
           : "warning",
     },
     customer_verification: {
@@ -177,10 +183,22 @@ const createVerificationStep = (id, title, description, icon, caseData) => {
           : "error",
     },
     documentation: {
-      status: caseData.status === "InvoiceApproved" ? "success" : "warning",
+      status: caseData.status === "InvoiceApproved" 
+        ? "success" 
+        : caseData.status === "Failed"
+        ? "error"
+        : "warning",
       autoCheck: caseData.status === "InvoiceApproved",
-      chipLabel: caseData.status === "InvoiceApproved" ? "Approved" : "Pending",
-      chipColor: caseData.status === "InvoiceApproved" ? "success" : "warning",
+      chipLabel: caseData.status === "InvoiceApproved" 
+        ? "Approved" 
+        : caseData.status === "Failed"
+        ? "Failed"
+        : "Pending",
+      chipColor: caseData.status === "InvoiceApproved" 
+        ? "success" 
+        : caseData.status === "Failed"
+        ? "error"
+        : "warning",
     },
   };
 
