@@ -230,6 +230,79 @@ export const sampleCases = [
       customerVAT: 0,
     },
     claimId: "e5f05c3b-68bd-40de-ab87-b9e1a2ada085",
+
+    // Activity Log Data
+    activityLog: [
+      {
+        timestamp: "2025-01-08T09:30:00.000Z",
+        actor: "System",
+        action: "Case created automatically from workshop submission",
+        type: "system_action",
+        details: "Case BS304776 created for vehicle DL39621",
+      },
+      {
+        timestamp: "2025-01-08T09:31:15.000Z",
+        actor: "System",
+        action: "Vehicle verification completed - Auto-approved",
+        type: "status_change",
+        details: "VIN NMTBZ20E70R135476 verified against vehicle registry",
+      },
+      {
+        timestamp: "2025-01-08T10:15:30.000Z",
+        actor: "Agent Larsen",
+        action: "Insurance policy verified and approved",
+        type: "status_change",
+        details: "Policy coverage confirmed for glass replacement",
+      },
+      {
+        timestamp: "2025-01-08T11:22:45.000Z",
+        actor: "System",
+        action: "Damage assessment images processed - Auto-warning",
+        type: "status_change",
+        details: "3 images uploaded, damage patterns detected",
+      },
+      {
+        timestamp: "2025-01-08T14:45:10.000Z",
+        actor: "Agent Larsen",
+        action: "Parts and labor pricing approved",
+        type: "status_change",
+        details: "Total cost 750 NOK approved within guidelines",
+      },
+    ],
+
+    publicComments: [
+      {
+        timestamp: "2025-01-08T10:30:00.000Z",
+        author: "Agent Larsen",
+        content:
+          "Hei! Jeg har verifisert forsikringsdekningen. Alt ser bra ut og saken kan fortsette.",
+        visibility: "public",
+      },
+      {
+        timestamp: "2025-01-08T15:00:00.000Z",
+        author: "RIIS BILGLASS",
+        content:
+          "Takk for rask behandling! Vi starter arbeidet i morgen tidlig.",
+        visibility: "public",
+      },
+    ],
+
+    internalNotes: [
+      {
+        timestamp: "2025-01-08T11:25:00.000Z",
+        author: "Agent Larsen",
+        content:
+          "Skadebildene viser typisk steinsprut. Kunden har god forsikringshistorikk.",
+        visibility: "internal",
+      },
+      {
+        timestamp: "2025-01-08T14:50:00.000Z",
+        author: "Agent Larsen",
+        content:
+          "Prisingen er innenfor normale rammer for Toyota Corolla frontrute. Godkjent.",
+        visibility: "internal",
+      },
+    ],
   },
   {
     id: "689b491341038c43f3b2a5d3",
@@ -1154,17 +1227,21 @@ export const sampleCases = [
 
 export const getStatusCounts = () => {
   const counts = {
-    InvoiceApproved: 0,
-    ReadyForApproval: 0,
+    Completed: 0,
+    "Pending Approval": 0,
     Failed: 0,
-    Pending: 0,
+    Open: 0,
   };
 
   sampleCases.forEach((caseItem) => {
-    if (counts.hasOwnProperty(caseItem.status)) {
-      counts[caseItem.status]++;
+    if (caseItem.status === "InvoiceApproved") {
+      counts["Completed"]++;
+    } else if (caseItem.status === "ReadyForApproval") {
+      counts["Pending Approval"]++;
+    } else if (caseItem.status === "Failed") {
+      counts["Failed"]++;
     } else {
-      counts["Pending"]++;
+      counts["Open"]++;
     }
   });
 

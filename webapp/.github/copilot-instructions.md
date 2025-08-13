@@ -17,6 +17,7 @@ This is a React web application built with Create React App for managing and sea
 ```
 src/
 ├── components/          # Reusable UI components
+│   └── ActivityLog.js   # ✅ Activity log and communication component
 ├── pages/              # Page-level components
 ├── case-details/       # Case detail views and related components
 ├── case-list/          # Case listing components
@@ -26,7 +27,101 @@ src/
 ├── hooks/              # Custom React hooks
 ├── utils/              # Utility functions
 ├── data/               # Data management
+├── steps/              # ✅ Modular step system configuration
+│   └── stepModules.js   # Step definitions and logic
 └── sample-data/        # Mock/sample data
+```
+
+## Modular Step System Architecture ✅ IMPLEMENTED
+
+### Overview
+
+The case verification system has been redesigned with a fully modular architecture that separates step configuration from UI rendering. This enables dynamic, API-driven case verification with consistent behavior across all verification steps.
+
+### Core Files
+
+- **`/src/steps/stepModules.js`**: Central configuration defining all 8 verification steps
+- **`/src/case-details/CaseDetails.js`**: Main implementation with helper functions for modular rendering
+- **`/src/components/ActivityLog.js`**: Activity tracking and communication component
+
+### Step Configuration Model
+
+Each step in `STEP_MODULES` follows this structure:
+
+```javascript
+{
+  id: "vehicle_verification",           // Unique step identifier
+  title: "Vehicle Verification",        // Display title
+  icon: "car",                         // Icon identifier
+  statusField: "vehicleStatus",        // Optional: custom status field name
+  statusLogic: {                       // Auto-status determination logic
+    autoApproved: (caseData) => boolean,
+    autoWarning: (caseData) => boolean
+  },
+  dataFields: ["vehicle.vin", "vehicle.licensePlate"], // Fields to display
+  fieldLabels: {                       // Custom field labels
+    "vehicle.vin": "VIN Number",
+    "vehicle.licensePlate": "License Plate"
+  }
+}
+```
+
+### 4-Status Model ✅ IMPLEMENTED
+
+The system uses a sophisticated 4-status model for each verification step:
+
+- **`Auto-approved`** - System automatically verified and approved (read-only, agent can override)
+- **`Auto-warning`** - System detected issues needing attention (editable)
+- **`Approved`** - Agent manually approved the step (read-only)
+- **`Declined`** - Agent manually declined the step (editable to fix issues)
+
+### Status Transition Rules
+
+- **System sets**: Only `Auto-approved` or `Auto-warning` statuses
+- **Agents can only set**: `Approved` or `Declined` statuses
+- **Agent override behavior**: Button toggles between `Approved`/`Declined`
+- **Once agent touches a step**: It can never return to auto-status
+- **Read-only when**: Status is `Auto-approved` or `Approved`
+- **Editable when**: Status is `Auto-warning` or `Declined`
+
+### Helper Functions ✅ IMPLEMENTED
+
+The modular system includes these key helper functions in `CaseDetails.js`:
+
+- **`getStepStatus(stepModule, caseData)`**: Determines current step status and UI properties
+- **`getFieldValue(obj, path)`**: Safe nested object property access
+- **`getStepIcon(iconName)`**: Maps icon names to Material-UI components
+- **`createVerificationStep(stepModule, caseData)`**: Creates complete step object with status
+- **`renderStepContent(step)`**: Generic content renderer for all modular steps
+
+### Current Implementation Status
+
+✅ **Fully Implemented (8 Steps)**:
+
+1. Vehicle Verification
+2. Insurance Validation
+3. Damage Assessment
+4. Customer Verification
+5. Parts & Labor
+6. ADAS Calibration
+7. Documentation
+8. Invoice Processing
+
+✅ **Activity Log Component**: Complete 3-tab interface for communication and audit trail
+
+### Usage Pattern
+
+```javascript
+// Import the step configuration
+import { STEP_MODULES } from "../steps/stepModules";
+
+// Create verification steps with current case data
+const verificationSteps = STEP_MODULES.map((stepModule) =>
+  createVerificationStep(stepModule, caseData)
+);
+
+// Render step content dynamically
+const content = renderStepContent(step);
 ```
 
 ## Coding Standards & Conventions
@@ -228,6 +323,163 @@ Each expandable item contains detailed information previously shown in separate 
 - Use `npm test` for running tests
 - Use `npm run build` for production builds
 - Follow the existing folder structure when adding new features
+
+## Modular Step System Architecture
+
+### Step Status Model
+
+The case verification system uses a 4-status model for each verification step:
+
+- **`Auto-approved`** - System automatically verified and approved the step (read-only, but agent can override)
+- **`Auto-warning`** - System detected something needing attention but didn't fail validation (editable)
+- **`Approved`** - Agent manually approved the step (read-only)
+- **`Declined`** - Agent manually declined the step (editable to fix issues)
+
+### Status Transition Rules
+
+- **System sets**: `Auto-approved` or `Auto-warning` only
+- **Agents can only set**: `Approved` or `Declined`
+- **Agent override behavior**: Button toggles between `Approved`/`Declined`
+- **Once agent touches a step**: It can never return to auto-status
+- **Read-only when**: Status is `Auto-approved` or `Approved`
+- **Editable when**: Status is `Auto-warning` or `Declined`
+
+### UI Behavior Guidelines
+
+- All steps remain expandable/collapsible regardless of status
+- Agent override button always visible (no separate override mode)
+- When status is approved (auto or manual), data fields become read-only
+- Use existing checkbox/button pattern for manual status changes
+- No visual lock indicators needed - read-only state is sufficient
+
+### Step Structure
+
+- Keep verification steps at high level (8 current steps implemented)
+- Design for easy addition/removal of steps via configuration
+- Support step dependencies as warnings/recommendations only (not enforcement)
+- Each step should be self-contained and modular for API updates
+
+### Images/Attachments Step Requirements
+
+- **Current Status**: Manual approval only - no auto-approval implemented yet
+- **Minimum Requirements**: 3 images required, at least 1 marked as damage
+- **Damage Indication**: Images marked with `feature: "damage"` or `checked: true`
+- **Future Enhancement**: Will implement auto-approved/auto-warning based on AI analysis
+- **UI Requirement**: Interface should support easy scanning and zooming of images
+- **Important Note**: "NB! Alle bilder skal tas før demontering og utskjæring" (All images must be taken before dismounting and cutting)
+
+### Parts & Labor Step Requirements
+
+- **Most Complex Step**: Handles order lines, pricing verification, and automated approval workflow
+- **Auto-Approval Logic**: Auto-approved when ALL lines have `priceAgreementResponse.comment.status === "Approved"`
+- **Auto-Warning Logic**: Auto-warning when ANY lines have failed automated checks
+- **Agent Override Rules**:
+  - Can edit lines unless already approved
+  - Must set to "declined" first to edit approved lines
+  - Applies to both individual lines and overall step
+- **Data Structure**: Array of order lines with category, article number, quantity, price, discount, total
+- **Price Comparison**: API provides min/max/average from price database for validation
+- **UI Requirements**:
+  - Compact, scannable table layout with proper spacing
+  - Clear status badges and clean typography
+  - Better presentation of price comparison data
+- **Summary Totals**: Includes sum, VAT, deductible, and amount to insurance
+
+### Invoice Step Requirements
+
+- **Simplified Interface**: Only upload button and information field needed
+- **API-Driven**: Status determined by automated API validation of uploaded invoice
+- **Auto-Approval Logic**: Auto-approved when API validates invoice successfully
+- **Auto-Warning Logic**: Auto-warning when API flags invoice for manual review
+- **Upload Only**: Workshop uploads invoice file, API handles all validation and data extraction
+- **Status Display**: Clear display of API response and validation results
+
+### Activity Log & Notes Component ✅ IMPLEMENTED
+
+- **Fully Implemented**: Separate component for case management and communication
+- **Component Location**: `/src/components/ActivityLog.js`
+- **Integration**: Integrated into case details page with state management
+- **Three Main Functions**:
+  - **Activity Timeline**: Scrollable chronological log of all system actions and status changes
+  - **Public Comments**: Communication visible to workshop (like current log usage)
+  - **Internal Notes**: Private notes visible only to agents/insurance
+- **Data Structure**:
+  - `activityLog` array for system actions with timestamp, actor, action, type
+  - `publicComments` array for workshop communication
+  - `internalNotes` array for private agent notes
+- **UI Implementation**:
+  - ✅ Three-tab interface with Material-UI Tabs component
+  - ✅ Visual separation between public (green) and private (orange) content
+  - ✅ Chronological timeline format with timestamps and actors
+  - ✅ Interactive text input fields for adding new comments/notes
+  - ✅ Real-time state updates with proper React state management
+  - ✅ Activity type icons and color coding (system, status_change, comment, note)
+- **Sample Data**: First case includes comprehensive activity log data for testing
+- **Use Cases**: Audit trail, workshop communication, internal case notes
+
+### Activity Log Usage Guidelines
+
+- **Adding Activity Entries**: Use the `onAddComment` and `onAddNote` callbacks to add new entries
+- **State Management**: Component receives `caseData` and updates parent state through callbacks
+- **Activity Types**:
+  - `system_action` (blue) - Automated system events
+  - `status_change` (primary) - Verification step updates
+  - `comment` (green) - Public workshop communication
+  - `note` (orange) - Private agent notes
+- **Data Integration**: Activity log automatically tracks when comments/notes are added
+- **UI Patterns**: Follow established Material-UI patterns with Cards, Lists, and proper spacing
+
+## Implementation Status & Next Steps
+
+### ✅ Completed Features
+
+1. **Modular Step System**: Complete 8-step verification system with dynamic configuration
+2. **4-Status Model**: Auto-approved, Auto-warning, Approved, Declined status logic
+3. **Activity Log Component**: Full 3-tab interface for communication and audit trail
+4. **Helper Functions**: Complete set of utilities for modular rendering and status management
+5. **Sample Data**: Comprehensive test data with activity logs, comments, and notes
+6. **UI Integration**: Seamless integration between verification steps and activity log
+
+### 🔧 Available Improvements
+
+1. **Code Cleanup**: Remove unused legacy render functions from CaseDetails.js
+2. **API Integration**: Connect step status updates to backend services
+3. **Enhanced Validation**: Add more sophisticated auto-approval logic for each step
+4. **Mobile Optimization**: Improve responsive design for mobile and tablet devices
+5. **Performance**: Optimize rendering for cases with large amounts of data
+6. **Testing**: Add comprehensive unit tests for step modules and helper functions
+7. **Accessibility**: Enhance screen reader support and keyboard navigation
+8. **Real-time Updates**: Implement WebSocket connections for live case updates
+
+### 🎯 Priority Recommendations
+
+**High Priority:**
+
+- Code cleanup to remove technical debt
+- Enhanced mobile responsiveness for field agents
+- API integration planning and implementation
+
+**Medium Priority:**
+
+- Performance optimizations for complex cases
+- Additional validation logic for auto-status determination
+- Unit testing coverage for critical functions
+
+**Low Priority:**
+
+- Advanced accessibility features
+- Real-time collaborative editing
+- Advanced analytics and reporting
+
+### 📋 Development Workflow
+
+When working on improvements:
+
+1. **Start Small**: Focus on one specific improvement at a time
+2. **Test Thoroughly**: Verify changes work with existing sample data
+3. **Maintain Compatibility**: Preserve existing functionality while adding new features
+4. **Follow Patterns**: Use established architectural patterns and conventions
+5. **Document Changes**: Update instructions and comments as needed
 
 ## Important Interaction Guidelines
 

@@ -39,8 +39,13 @@ import {
   FindInPage as InspectionIcon,
   AttachMoney as PricingIcon,
   RadioButtonUnchecked as UncheckedIcon,
+  Image as ImageIcon,
+  Receipt as InvoiceIcon,
+  Tune as CalibrationIcon,
 } from "@mui/icons-material";
 import { getCaseById, sampleCases } from "../sample-data/sampleCases";
+import { STEP_MODULES } from "../steps/stepModules";
+import ActivityLog from "../components/ActivityLog";
 
 // Helper component for information rows
 const InfoRow = ({ label, value, highlight = false }) => (
@@ -62,152 +67,133 @@ const InfoRow = ({ label, value, highlight = false }) => (
   </Box>
 );
 
-// Helper function to create verification step configuration
-const createVerificationStep = (id, title, description, icon, caseData) => {
-  const stepConfigs = {
-    vehicle_verification: {
+// Helper function to get step status based on 4-status model
+const getStepStatus = (stepModule, caseData) => {
+  // First check if there's a manual status override in the case data
+  const manualStatusField = stepModule.statusField || `${stepModule.id}Status`;
+  const manualStatus = caseData[manualStatusField];
+
+  // If agent has manually set status, use that
+  if (manualStatus === "Approved" || manualStatus === "Declined") {
+    return {
       status:
-        caseData.vehicle?.brandName && caseData.vehicle?.vin
-          ? "success"
-          : "warning",
-      autoCheck: !!(caseData.vehicle?.brandName && caseData.vehicle?.vin),
-      chipLabel:
-        caseData.vehicle?.brandName && caseData.vehicle?.vin
-          ? "Auto-verified"
-          : "Pending",
+        manualStatus.toLowerCase() === "approved" ? "approved" : "declined",
+      chipLabel: manualStatus,
       chipColor:
-        caseData.vehicle?.brandName && caseData.vehicle?.vin
-          ? "success"
-          : "warning",
-    },
-    insurance_validation: {
-      status: caseData.coverageStatus === "Approved"
-        ? "success"
-        : caseData.coverageStatus === "Declined" 
-        ? "error" 
-        : "warning",
-      autoCheck: caseData.coverageStatus === "Approved",
-      chipLabel: caseData.coverageStatus === "Approved"
-        ? "Auto-verified"
-        : caseData.coverageStatus === "Declined"
-        ? "No Coverage"
-        : "Pending",
-      chipColor: caseData.coverageStatus === "Approved"
-        ? "success"
-        : caseData.coverageStatus === "Declined"
-        ? "error"
-        : "warning",
-    },
-    damage_assessment: {
-      status:
-        caseData.imagesStatus === "Approved" && caseData.dateOfIncident
-          ? "success"
-          : caseData.imagesStatus === "Declined"
-          ? "error"
-          : "warning",
-      autoCheck: caseData.imagesStatus === "Approved" && caseData.dateOfIncident,
-      chipLabel:
-        caseData.imagesStatus === "Approved" && caseData.dateOfIncident
-          ? "Auto-verified"
-          : caseData.imagesStatus === "Declined"
-          ? "Declined"
-          : "Pending",
-      chipColor:
-        caseData.imagesStatus === "Approved" && caseData.dateOfIncident
-          ? "success"
-          : caseData.imagesStatus === "Declined"
-          ? "error"
-          : "warning",
-    },
-    customer_verification: {
-      status:
-        caseData.damageFormSignatureStatus === "SignedByCustomer"
-          ? "success"
-          : "warning",
-      autoCheck: caseData.damageFormSignatureStatus === "SignedByCustomer",
-      chipLabel:
-        caseData.damageFormSignatureStatus === "SignedByCustomer"
-          ? "Auto-verified"
-          : "Pending",
-      chipColor:
-        caseData.damageFormSignatureStatus === "SignedByCustomer"
-          ? "success"
-          : "warning",
-    },
-    parts_approval: {
-      status: caseData.orderLinesStatus === "Approved"
-        ? "success"
-        : caseData.orderLinesStatus === "Declined"
-        ? "error"
-        : "warning",
-      autoCheck: caseData.orderLinesStatus === "Approved",
-      chipLabel: caseData.orderLinesStatus === "Approved"
-        ? "Approved"
-        : caseData.orderLinesStatus === "Declined"
-        ? "Declined"
-        : "Pending",
-      chipColor: caseData.orderLinesStatus === "Approved"
-        ? "success"
-        : caseData.orderLinesStatus === "Declined"
-        ? "error"
-        : "warning",
-    },
-    calibration_check: {
-      status:
-        caseData.adasStatus === "NotRequired" ||
-        caseData.adasStatus === "Completed"
-          ? "success"
-          : caseData.adasStatus === "MustBeChecked" ||
-            caseData.adasStatus === "Required"
-          ? "warning"
-          : "error",
-      autoCheck:
-        caseData.adasStatus === "NotRequired" ||
-        caseData.adasStatus === "Completed",
-      chipLabel:
-        caseData.adasStatus === "NotRequired"
-          ? "Auto-verified"
-          : caseData.adasStatus === "Completed"
-          ? "Approved"
-          : caseData.adasStatus === "MustBeChecked" ||
-            caseData.adasStatus === "Required"
-          ? "Pending"
-          : "Failed",
-      chipColor:
-        caseData.adasStatus === "NotRequired" ||
-        caseData.adasStatus === "Completed"
-          ? "success"
-          : caseData.adasStatus === "MustBeChecked" ||
-            caseData.adasStatus === "Required"
-          ? "warning"
-          : "error",
-    },
-    documentation: {
-      status: caseData.status === "InvoiceApproved" 
-        ? "success" 
-        : caseData.status === "Failed"
-        ? "error"
-        : "warning",
-      autoCheck: caseData.status === "InvoiceApproved",
-      chipLabel: caseData.status === "InvoiceApproved" 
-        ? "Approved" 
-        : caseData.status === "Failed"
-        ? "Failed"
-        : "Pending",
-      chipColor: caseData.status === "InvoiceApproved" 
-        ? "success" 
-        : caseData.status === "Failed"
-        ? "error"
-        : "warning",
-    },
+        manualStatus.toLowerCase() === "approved" ? "success" : "error",
+      isAutomatic: false,
+      isReadOnly: manualStatus.toLowerCase() === "approved",
+    };
+  }
+
+  // Check for automatic status determination
+  if (stepModule.statusLogic?.autoApproved?.(caseData)) {
+    return {
+      status: "auto-approved",
+      chipLabel: "Auto-approved",
+      chipColor: "success",
+      isAutomatic: true,
+      isReadOnly: true,
+    };
+  }
+
+  if (stepModule.statusLogic?.autoWarning?.(caseData)) {
+    return {
+      status: "auto-warning",
+      chipLabel: "Auto-warning",
+      chipColor: "warning",
+      isAutomatic: true,
+      isReadOnly: false,
+    };
+  }
+
+  // Default to pending if no status can be determined
+  return {
+    status: "pending",
+    chipLabel: "Pending",
+    chipColor: "default",
+    isAutomatic: false,
+    isReadOnly: false,
   };
+};
+
+// Helper function to get step field value from case data using dot notation
+const getFieldValue = (caseData, fieldPath) => {
+  const value = fieldPath.split(".").reduce((obj, key) => {
+    if (obj === null || obj === undefined) return undefined;
+    return obj[key];
+  }, caseData);
+
+  // Handle null/undefined
+  if (value === null || value === undefined) {
+    return "N/A";
+  }
+
+  // Handle objects - convert to string representation
+  if (typeof value === "object") {
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return value.length > 0 ? `${value.length} items` : "None";
+    }
+    // Handle objects with name property
+    if (value.name) {
+      return value.name;
+    }
+    // Handle objects - return JSON string or a readable format
+    return JSON.stringify(value);
+  }
+
+  // Format dates for display
+  if (typeof value === "string" && value.includes("T") && value.includes("Z")) {
+    const date = new Date(value);
+    if (!isNaN(date.getTime()) && value !== "0001-01-01T00:00:00Z") {
+      return date.toLocaleDateString("no-NO");
+    }
+  }
+
+  // Handle boolean values
+  if (typeof value === "boolean") {
+    return value ? "Yes" : "No";
+  }
+
+  return String(value);
+};
+
+// Icon mapping for step modules
+const getStepIcon = (iconName) => {
+  const iconMap = {
+    Security: <InsuranceIcon />,
+    DirectionsCar: <CarIcon />,
+    Assignment: <ReportIcon />,
+    Person: <PersonIcon />,
+    AttachMoney: <PricingIcon />,
+    Tune: <CalibrationIcon />,
+    Image: <ImageIcon />,
+    Receipt: <InvoiceIcon />,
+    Build: <RepairIcon />,
+    FindInPage: <InspectionIcon />,
+  };
+  return iconMap[iconName] || <CheckIcon />;
+};
+
+// Helper function to create verification step configuration using step modules
+const createVerificationStep = (stepId, caseData) => {
+  const stepModule = STEP_MODULES[stepId];
+  if (!stepModule) {
+    console.warn(`Step module not found for: ${stepId}`);
+    return null;
+  }
+
+  const statusInfo = getStepStatus(stepModule, caseData);
 
   return {
-    id,
-    title,
-    description,
-    icon,
-    ...stepConfigs[id],
+    id: stepModule.id,
+    title: stepModule.name,
+    description: stepModule.description,
+    icon: getStepIcon(stepModule.icon),
+    order: stepModule.order,
+    ...statusInfo,
+    stepModule, // Include the full step module for detailed rendering
   };
 };
 
@@ -215,77 +201,32 @@ const VerificationSteps = ({ caseData }) => {
   const [checkedSteps, setCheckedSteps] = useState(new Set());
   const [expandedSteps, setExpandedSteps] = useState(new Set());
 
-  const verificationSteps = React.useMemo(
-    () => [
-      createVerificationStep(
-        "vehicle_verification",
-        "Vehicle Identification Verification",
-        "VIN number, registration documents, ownership verification",
-        <CarIcon />,
-        caseData
-      ),
-      createVerificationStep(
-        "insurance_validation",
-        "Insurance Policy Validation",
-        "Active policy verification, coverage confirmation",
-        <InsuranceIcon />,
-        caseData
-      ),
-      createVerificationStep(
-        "damage_assessment",
-        "Damage Assessment Completed",
-        "Photos uploaded, inspection report, damage evaluation",
-        <InspectionIcon />,
-        caseData
-      ),
-      createVerificationStep(
-        "customer_verification",
-        "Customer Identity Verification",
-        "ID verification, signature collection, contact confirmation",
-        <PersonIcon />,
-        caseData
-      ),
-      createVerificationStep(
-        "parts_approval",
-        "Parts & Labor Approval",
-        "Cost estimation, parts sourcing, labor cost approval",
-        <PricingIcon />,
-        caseData
-      ),
-      createVerificationStep(
-        "calibration_check",
-        "Calibration Requirements",
-        "ADAS systems calibration assessment and scheduling",
-        <RepairIcon />,
-        caseData
-      ),
-      createVerificationStep(
-        "documentation",
-        "Final Documentation",
-        "All paperwork complete, signed, and filed",
-        <ReportIcon />,
-        caseData
-      ),
-    ],
-    [caseData]
-  );
+  // Get all step modules and create verification steps
+  const verificationSteps = React.useMemo(() => {
+    const steps = Object.keys(STEP_MODULES)
+      .map((stepId) => createVerificationStep(stepId, caseData))
+      .filter((step) => step !== null) // Remove any steps that failed to create
+      .sort((a, b) => a.order - b.order); // Sort by order
 
-  // Initialize checked steps based on auto-check status
+    return steps;
+  }, [caseData]);
+
+  // Initialize checked steps based on approved status
   React.useEffect(() => {
-    const autoCheckedSteps = new Set();
+    const approvedSteps = new Set();
     verificationSteps.forEach((step) => {
-      if (step.autoCheck) {
-        autoCheckedSteps.add(step.id);
+      if (step.status === "auto-approved" || step.status === "approved") {
+        approvedSteps.add(step.id);
       }
     });
-    setCheckedSteps(autoCheckedSteps);
+    setCheckedSteps(approvedSteps);
   }, [verificationSteps]);
 
-  // Auto-expand sections that have warnings or errors (non-success status)
+  // Auto-expand sections that have warnings or errors
   React.useEffect(() => {
     const autoExpandedSteps = new Set();
     verificationSteps.forEach((step) => {
-      if (step.status !== "success") {
+      if (step.status === "auto-warning" || step.status === "declined") {
         autoExpandedSteps.add(step.id);
       }
     });
@@ -293,12 +234,24 @@ const VerificationSteps = ({ caseData }) => {
   }, [verificationSteps]);
 
   const handleStepToggle = (stepId) => {
+    // This function now handles agent override between Approved/Declined
+    // Based on our 4-status model business rules
+    const step = verificationSteps.find((s) => s.id === stepId);
+    if (!step) return;
+
     const newCheckedSteps = new Set(checkedSteps);
+
+    // Toggle between checked (approved) and unchecked (declined)
     if (newCheckedSteps.has(stepId)) {
       newCheckedSteps.delete(stepId);
+      // Here we would call API to set status to 'Declined'
+      console.log(`Setting step ${stepId} to Declined`);
     } else {
       newCheckedSteps.add(stepId);
+      // Here we would call API to set status to 'Approved'
+      console.log(`Setting step ${stepId} to Approved`);
     }
+
     setCheckedSteps(newCheckedSteps);
   };
 
@@ -723,25 +676,59 @@ const VerificationSteps = ({ caseData }) => {
     </Box>
   );
 
+  // Generic function to render step content based on step module configuration
+  const renderStepContent = (step) => {
+    const { stepModule } = step;
+    const dataFields = stepModule.dataFields || {};
+    const fieldLabels = stepModule.fieldLabels || {};
+
+    // Get field values from case data
+    const fieldValues = Object.entries(dataFields).map(
+      ([fieldKey, fieldPath]) => ({
+        key: fieldKey,
+        label: fieldLabels[fieldKey] || fieldKey,
+        value: getFieldValue(caseData, fieldPath) || "N/A",
+      })
+    );
+
+    // Split into two columns
+    const midPoint = Math.ceil(fieldValues.length / 2);
+    const leftFields = fieldValues.slice(0, midPoint);
+    const rightFields = fieldValues.slice(midPoint);
+
+    return (
+      <Box sx={{ mt: 1, p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            {leftFields.map((field) => (
+              <InfoRow
+                key={field.key}
+                label={field.label}
+                value={field.value}
+              />
+            ))}
+          </Grid>
+          <Grid item xs={12} md={6}>
+            {rightFields.map((field) => (
+              <InfoRow
+                key={field.key}
+                label={field.label}
+                value={field.value}
+              />
+            ))}
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  };
+
   const getDetailContent = (stepId) => {
-    switch (stepId) {
-      case "vehicle_verification":
-        return renderVehicleDetails();
-      case "insurance_validation":
-        return renderInsuranceDetails();
-      case "damage_assessment":
-        return renderDamageDetails();
-      case "customer_verification":
-        return renderCustomerDetails();
-      case "parts_approval":
-        return renderPartsDetails();
-      case "calibration_check":
-        return renderCalibrationDetails();
-      case "documentation":
-        return renderDocumentationDetails();
-      default:
-        return null;
-    }
+    // Find the step in our verification steps array
+    const step = verificationSteps.find((s) => s.id === stepId);
+    if (!step) return null;
+
+    // Use the generic step content renderer for modular steps
+    return renderStepContent(step);
   };
 
   const completedSteps = checkedSteps.size;
@@ -776,7 +763,11 @@ const VerificationSteps = ({ caseData }) => {
             const isChecked = checkedSteps.has(step.id);
             const isExpanded = expandedSteps.has(step.id);
             const statusColor =
-              step.status === "success" ? "success.main" : "warning.main";
+              step.chipColor === "success"
+                ? "success.main"
+                : step.chipColor === "error"
+                ? "error.main"
+                : "warning.main";
 
             return (
               <Box key={step.id}>
@@ -1089,7 +1080,7 @@ const CaseHeader = ({ caseData }) => {
 
 const CaseDetails = () => {
   const { id } = useParams();
-  const caseData = getCaseById(id);
+  const [caseData, setCaseData] = useState(() => getCaseById(id));
 
   if (!caseData) {
     return (
@@ -1099,12 +1090,56 @@ const CaseDetails = () => {
     );
   }
 
+  // Handlers for activity log
+  const handleAddComment = (comment) => {
+    setCaseData((prevData) => ({
+      ...prevData,
+      publicComments: [...(prevData.publicComments || []), comment],
+      // Also add to activity log
+      activityLog: [
+        ...(prevData.activityLog || []),
+        {
+          timestamp: comment.timestamp,
+          actor: comment.author,
+          action: `Added public comment: "${comment.content}"`,
+          type: "comment",
+          details: "Visible to workshop",
+        },
+      ],
+    }));
+  };
+
+  const handleAddNote = (note) => {
+    setCaseData((prevData) => ({
+      ...prevData,
+      internalNotes: [...(prevData.internalNotes || []), note],
+      // Also add to activity log
+      activityLog: [
+        ...(prevData.activityLog || []),
+        {
+          timestamp: note.timestamp,
+          actor: note.author,
+          action: `Added internal note: "${note.content}"`,
+          type: "note",
+          details: "Internal only",
+        },
+      ],
+    }));
+  };
+
   return (
     <Box sx={{ width: "100%", p: 1 }}>
       <CaseHeader caseData={caseData} />
 
       {/* Verification Steps Section with Expandable Details */}
       <VerificationSteps caseData={caseData} />
+
+      {/* Activity Log and Notes Section */}
+      <ActivityLog
+        caseData={caseData}
+        onAddComment={handleAddComment}
+        onAddNote={handleAddNote}
+      />
     </Box>
   );
 };

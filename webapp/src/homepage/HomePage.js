@@ -38,6 +38,44 @@ const STATUS_OPTIONS = [
 
 // Utility functions
 
+// Calculate completion steps based on status fields
+const calculateSteps = (caseItem) => {
+  const statusFields = [
+    caseItem.coverageStatus,
+    caseItem.imagesStatus,
+    caseItem.orderStatus,
+    caseItem.invoiceStatus,
+    caseItem.orderLinesStatus,
+    caseItem.damageFormSignatureStatus,
+    caseItem.adasStatus,
+  ];
+
+  const totalSteps = statusFields.length;
+  const completedSteps = statusFields.filter(
+    (status) =>
+      status === "Approved" ||
+      status === "SignedByCustomer" ||
+      status === "NotRequired" ||
+      status === "Completed"
+  ).length;
+
+  return { completedSteps, totalSteps };
+};
+
+// Map case status to display status
+const mapCaseStatusToDisplay = (caseStatus) => {
+  switch (caseStatus) {
+    case "InvoiceApproved":
+      return "Completed";
+    case "ReadyForApproval":
+      return "Pending Approval";
+    case "Failed":
+      return "Failed";
+    default:
+      return "Open";
+  }
+};
+
 const StatusCard = ({ label, value, icon, selected, onClick }) => (
   <Paper
     onClick={onClick}
@@ -86,7 +124,7 @@ const HomePage = () => {
 
   const recentCases = useMemo(() => {
     return [...sampleCases]
-      .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
+      .sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified))
       .slice(0, 10);
   }, []);
 
@@ -114,23 +152,23 @@ const HomePage = () => {
             onClick={() => toggleStatus("Pending Approval")}
           />
           <StatusCard
-            label="Invoice Flow / Control"
-            value={counts["Invoice Flow"]}
-            icon={<PaidIcon />}
+            label="Open Cases"
+            value={counts["Open"]}
+            icon={<WarningAmberIcon />}
             selected={false}
-            onClick={() => toggleStatus("Invoice Flow")}
+            onClick={() => toggleStatus("Open")}
           />
           <StatusCard
-            label="Failed"
+            label="Failed Cases"
             value={counts["Failed"]}
-            icon={<WarningAmberIcon />}
+            icon={<AssignmentTurnedInIcon />}
             selected={false}
             onClick={() => toggleStatus("Failed")}
           />
           <StatusCard
             label="Completed"
             value={counts["Completed"]}
-            icon={<AssignmentTurnedInIcon />}
+            icon={<PaidIcon />}
             selected={false}
             onClick={() => toggleStatus("Completed")}
           />
@@ -234,8 +272,13 @@ const HomePage = () => {
                 </TableHead>
                 <TableBody>
                   {recentCases.map((caseItem) => {
+                    const { completedSteps, totalSteps } =
+                      calculateSteps(caseItem);
                     const progressPercentage =
-                      (caseItem.completedSteps / caseItem.totalSteps) * 100;
+                      (completedSteps / totalSteps) * 100;
+                    const displayStatus = mapCaseStatusToDisplay(
+                      caseItem.status
+                    );
 
                     return (
                       <TableRow
@@ -342,7 +385,7 @@ const HomePage = () => {
                               variant="caption"
                               sx={{ fontSize: "0.7rem", minWidth: 35 }}
                             >
-                              {caseItem.completedSteps}/{caseItem.totalSteps}
+                              {completedSteps}/{totalSteps}
                             </Typography>
                           </Box>
                         </TableCell>
@@ -350,7 +393,7 @@ const HomePage = () => {
                         <TableCell>
                           <FormControl size="small" sx={{ minWidth: 140 }}>
                             <Select
-                              value={caseItem.status}
+                              value={displayStatus}
                               size="small"
                               onClick={(e) => e.stopPropagation()}
                               displayEmpty
@@ -364,7 +407,7 @@ const HomePage = () => {
                                   borderRadius: "16px",
                                   backgroundColor: (() => {
                                     const option = STATUS_OPTIONS.find(
-                                      (opt) => opt.value === caseItem.status
+                                      (opt) => opt.value === displayStatus
                                     );
                                     switch (option?.color) {
                                       case "success":
@@ -383,7 +426,7 @@ const HomePage = () => {
                                   })(),
                                   color: (() => {
                                     const option = STATUS_OPTIONS.find(
-                                      (opt) => opt.value === caseItem.status
+                                      (opt) => opt.value === displayStatus
                                     );
                                     switch (option?.color) {
                                       case "success":
@@ -415,7 +458,7 @@ const HomePage = () => {
                                 "& .MuiSelect-icon": {
                                   color: (() => {
                                     const option = STATUS_OPTIONS.find(
-                                      (opt) => opt.value === caseItem.status
+                                      (opt) => opt.value === displayStatus
                                     );
                                     switch (option?.color) {
                                       case "success":
