@@ -319,10 +319,11 @@ Each expandable item contains detailed information previously shown in separate 
 
 ## Development Workflow
 
-- Use `npm start` for development server
+- **Development Server**: The npm development server is always running and available for testing
 - Use `npm test` for running tests
 - Use `npm run build` for production builds
 - Follow the existing folder structure when adding new features
+- **Debugging Support**: Console logs and screenshots are available upon request for troubleshooting
 
 ## Modular Step System Architecture
 

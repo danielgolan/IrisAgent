@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -13,7 +13,6 @@ import {
   Divider,
   IconButton,
   Avatar,
-  Tooltip,
   LinearProgress,
   Checkbox,
   FormControlLabel,
@@ -25,7 +24,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Button,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -34,7 +32,6 @@ import {
   Build as RepairIcon,
   Assignment as ReportIcon,
   CheckCircle as CheckIcon,
-  Edit as EditIcon,
   Person as PersonIcon,
   FindInPage as InspectionIcon,
   AttachMoney as PricingIcon,
@@ -43,17 +40,17 @@ import {
   Receipt as InvoiceIcon,
   Tune as CalibrationIcon,
 } from "@mui/icons-material";
-import { getCaseById, sampleCases } from "../sample-data/sampleCases";
+import { getCaseById } from "../sample-data/sampleCases";
 import { STEP_MODULES } from "../steps/stepModules";
 import ActivityLog from "../components/ActivityLog";
 
 // Helper component for information rows
 const InfoRow = ({ label, value, highlight = false }) => (
-  <Box sx={{ mb: 1 }}>
+  <Box sx={{ mb: 2 }}>
     <Typography
       variant="body2"
       color="text.secondary"
-      sx={{ fontSize: "0.75rem", mb: 0.25 }}
+      sx={{ fontSize: "0.875rem", mb: 0.5, fontWeight: 500 }}
     >
       {label}
     </Typography>
@@ -61,6 +58,7 @@ const InfoRow = ({ label, value, highlight = false }) => (
       variant="body2"
       fontWeight={highlight ? 700 : 600}
       color={highlight ? "primary.main" : "inherit"}
+      sx={{ fontSize: "0.95rem", lineHeight: 1.4 }}
     >
       {value}
     </Typography>
@@ -267,9 +265,9 @@ const VerificationSteps = ({ caseData }) => {
 
   // Detailed content components for each section
   const renderVehicleDetails = () => (
-    <Box sx={{ mt: 1, p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+    <Box sx={{ mt: 1, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <InfoRow label="Make" value={caseData.vehicle?.brandName || "N/A"} />
           <InfoRow label="Model" value={caseData.vehicle?.model || "N/A"} />
           <InfoRow
@@ -282,9 +280,9 @@ const VerificationSteps = ({ caseData }) => {
                 : "N/A"
             }
           />
-          <InfoRow label="VIN" value={caseData.vehicle?.vin || "N/A"} />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} sm={6} md={4}>
+          <InfoRow label="VIN" value={caseData.vehicle?.vin || "N/A"} />
           <InfoRow
             label="License Plate"
             value={caseData.vehicle?.vehicleLicenseNumber || "N/A"}
@@ -293,6 +291,8 @@ const VerificationSteps = ({ caseData }) => {
             label="Vehicle Type"
             value={caseData.vehicle?.vehicleType || "N/A"}
           />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
           <InfoRow label="Color" value={caseData.vehicle?.color || "N/A"} />
           <InfoRow
             label="Commercial Van"
@@ -304,9 +304,9 @@ const VerificationSteps = ({ caseData }) => {
   );
 
   const renderInsuranceDetails = () => (
-    <Box sx={{ mt: 1, p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+    <Box sx={{ mt: 1, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <InfoRow
             label="Insurance Company"
             value={
@@ -319,19 +319,8 @@ const VerificationSteps = ({ caseData }) => {
               caseData.insuranceInformation?.coverage?.coverageLevel || "N/A"
             }
           />
-          <InfoRow
-            label="Deductible"
-            value={
-              caseData.insuranceInformation?.coverage?.deductible
-                ? `${caseData.insuranceInformation.coverage.deductible} ${
-                    caseData.insuranceInformation.coverage.deductibleCurrency ||
-                    "NOK"
-                  }`
-                : "N/A"
-            }
-          />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} sm={6} md={4}>
           <InfoRow
             label="Policy Number"
             value={caseData.insuranceInformation?.policyNumber || "N/A"}
@@ -344,6 +333,19 @@ const VerificationSteps = ({ caseData }) => {
                 : "No"
             }
           />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <InfoRow
+            label="Deductible"
+            value={
+              caseData.insuranceInformation?.coverage?.deductible
+                ? `${caseData.insuranceInformation.coverage.deductible} ${
+                    caseData.insuranceInformation.coverage.deductibleCurrency ||
+                    "NOK"
+                  }`
+                : "N/A"
+            }
+          />
           <InfoRow
             label="Customer Category"
             value={caseData.insuranceInformation?.customerCategory || "N/A"}
@@ -351,7 +353,7 @@ const VerificationSteps = ({ caseData }) => {
         </Grid>
       </Grid>
       {!caseData.insuranceInformation?.coverage?.hasGlassCoverage && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" sx={{ mt: 3 }}>
           No glass coverage - customer will pay full amount
         </Alert>
       )}
@@ -691,16 +693,18 @@ const VerificationSteps = ({ caseData }) => {
       })
     );
 
-    // Split into two columns
-    const midPoint = Math.ceil(fieldValues.length / 2);
-    const leftFields = fieldValues.slice(0, midPoint);
-    const rightFields = fieldValues.slice(midPoint);
+    // Split into four columns for even better horizontal space usage
+    const fieldsPerColumn = Math.ceil(fieldValues.length / 4);
+    const column1 = fieldValues.slice(0, fieldsPerColumn);
+    const column2 = fieldValues.slice(fieldsPerColumn, fieldsPerColumn * 2);
+    const column3 = fieldValues.slice(fieldsPerColumn * 2, fieldsPerColumn * 3);
+    const column4 = fieldValues.slice(fieldsPerColumn * 3);
 
     return (
-      <Box sx={{ mt: 1, p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            {leftFields.map((field) => (
+      <Box sx={{ mt: 1, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} md={3}>
+            {column1.map((field) => (
               <InfoRow
                 key={field.key}
                 label={field.label}
@@ -708,8 +712,26 @@ const VerificationSteps = ({ caseData }) => {
               />
             ))}
           </Grid>
-          <Grid item xs={12} md={6}>
-            {rightFields.map((field) => (
+          <Grid item xs={12} sm={6} md={3}>
+            {column2.map((field) => (
+              <InfoRow
+                key={field.key}
+                label={field.label}
+                value={field.value}
+              />
+            ))}
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            {column3.map((field) => (
+              <InfoRow
+                key={field.key}
+                label={field.label}
+                value={field.value}
+              />
+            ))}
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            {column4.map((field) => (
               <InfoRow
                 key={field.key}
                 label={field.label}
@@ -736,7 +758,7 @@ const VerificationSteps = ({ caseData }) => {
   const progressPercentage = (completedSteps / totalSteps) * 100;
 
   return (
-    <Card elevation={3} sx={{ mb: 2 }}>
+    <Card elevation={3} sx={{ mb: 3 }}>
       <CardHeader
         title="Case Verification Checklist"
         subheader={`${completedSteps} of ${totalSteps} steps completed`}
@@ -748,13 +770,13 @@ const VerificationSteps = ({ caseData }) => {
             size="small"
           />
         }
-        sx={{ pb: 1 }}
+        sx={{ pb: 1, px: 3, pt: 3 }}
       />
-      <CardContent sx={{ pt: 0 }}>
+      <CardContent sx={{ pt: 0, px: 3, pb: 3 }}>
         <LinearProgress
           variant="determinate"
           value={progressPercentage}
-          sx={{ mb: 2, height: 6, borderRadius: 3 }}
+          sx={{ mb: 3, height: 8, borderRadius: 4 }}
           color={progressPercentage === 100 ? "success" : "primary"}
         />
 
@@ -777,29 +799,34 @@ const VerificationSteps = ({ caseData }) => {
                     cursor: "pointer",
                     "&:hover": { bgcolor: "grey.50" },
                     bgcolor: isExpanded ? "grey.25" : "transparent",
-                    py: 1.5,
-                    minHeight: 64,
+                    py: 2,
+                    px: 3,
+                    minHeight: 72,
                   }}
                   onClick={() => handleExpandToggle(step.id)}
                 >
-                  <ListItemIcon sx={{ minWidth: 48 }}>
+                  <ListItemIcon sx={{ minWidth: 56 }}>
                     <Avatar
                       sx={{
                         bgcolor: isChecked ? "success.main" : statusColor,
-                        width: 32,
-                        height: 32,
+                        width: 40,
+                        height: 40,
                       }}
                     >
-                      {React.cloneElement(step.icon, { fontSize: "small" })}
+                      {React.cloneElement(step.icon, { fontSize: "medium" })}
                     </Avatar>
                   </ListItemIcon>
 
                   <ListItemText
                     primary={
                       <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
                       >
-                        <Typography variant="subtitle1" fontWeight={600}>
+                        <Typography
+                          variant="h6"
+                          fontWeight={600}
+                          sx={{ fontSize: "1.1rem" }}
+                        >
                           {step.title}
                         </Typography>
                         <Chip
@@ -920,44 +947,28 @@ const formatDateTime = (dateString) => {
 };
 
 const CaseHeader = ({ caseData }) => {
-  const navigate = useNavigate();
   const [currentStatus, setCurrentStatus] = useState(caseData.status);
 
   const handleStatusChange = (event) => {
     setCurrentStatus(event.target.value);
     console.log("Status changed to:", event.target.value);
-  };
-
-  const handleNextCase = () => {
-    const pendingCases = sampleCases.filter(
-      (caseItem) => caseItem.status === "Pending Approval"
-    );
-    const currentIndex = pendingCases.findIndex(
-      (caseItem) => caseItem.id === caseData.id
-    );
-
-    let nextCase;
-    if (currentIndex === -1) {
-      nextCase = pendingCases[0];
-    } else if (currentIndex < pendingCases.length - 1) {
-      nextCase = pendingCases[currentIndex + 1];
-    } else {
-      nextCase = pendingCases[0];
-    }
-
-    if (nextCase) {
-      navigate(`/case/${nextCase.id}`);
-    }
-  };
-
-  const getPendingCasesCount = () => {
-    return sampleCases.filter(
-      (caseItem) => caseItem.status === "Pending Approval"
-    ).length;
+    // TODO: Update case status in backend
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+    <Paper
+      elevation={3}
+      sx={{
+        p: 2,
+        mb: 2,
+        position: "sticky",
+        top: 0,
+        zIndex: 1000,
+        backgroundColor: "background.paper",
+        borderBottom: "1px solid",
+        borderBottomColor: "divider",
+      }}
+    >
       {/* Top Row: Case Title and Status */}
       <Box
         sx={{
@@ -996,14 +1007,6 @@ const CaseHeader = ({ caseData }) => {
             pr: 2.5, // Add padding back for content
           }}
         >
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleNextCase}
-            disabled={getPendingCasesCount() <= 1}
-          >
-            Next Case ({getPendingCasesCount() - 1} pending)
-          </Button>
           <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Status</InputLabel>
             <Select
@@ -1013,67 +1016,168 @@ const CaseHeader = ({ caseData }) => {
             >
               {STATUS_OPTIONS.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
-                  <Chip
-                    label={option.label}
-                    size="small"
-                    color={option.color}
-                    variant="filled"
-                  />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Chip
+                      label={option.label}
+                      size="small"
+                      color={option.color}
+                      variant="filled"
+                    />
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-          <Tooltip title="Edit Case">
-            <IconButton color="primary" size="small">
-              <EditIcon />
-            </IconButton>
-          </Tooltip>
         </Box>
       </Box>
 
-      {/* Bottom Row: Case Information */}
-      <Grid container spacing={3} sx={{ width: "100%" }}>
-        <Grid item xs={6} sm={3} md={2.5} lg={2}>
-          <InfoRow
-            label="VRN (License Plate)"
-            value={caseData.vehicle?.vehicleLicenseNumber}
-          />
-        </Grid>
-        <Grid item xs={6} sm={3} md={2.5} lg={2}>
-          <InfoRow
-            label="Incident Date"
-            value={
-              caseData.dateOfIncident
-                ? new Date(caseData.dateOfIncident).toLocaleDateString()
-                : "N/A"
-            }
-          />
-        </Grid>
-        <Grid item xs={6} sm={3} md={3} lg={3}>
-          <InfoRow label="Workshop" value={caseData.workshop?.name} />
-        </Grid>
-        <Grid item xs={6} sm={3} md={4} lg={5}>
-          <Box
-            sx={{
-              textAlign: "right",
-              width: "100%",
-              mr: -2.5,
-              pr: 2.5,
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              Last updated: {formatDateTime(caseData.lastUpdated)}
-            </Typography>
+      {/* Single Row: Case Information */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: { xs: 2, sm: 3, md: 4 },
+          width: "100%",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 2, sm: 3, md: 4 },
+            flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ minWidth: { xs: 120, sm: 140 } }}>
             <Typography
               variant="caption"
               color="text.secondary"
-              display="block"
+              sx={{ fontSize: "0.875rem", fontWeight: 500 }}
             >
-              by {caseData.lastUpdatedBy}
+              VRN (License Plate)
+            </Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{ fontSize: "0.95rem" }}
+            >
+              {caseData.vehicle?.vehicleLicenseNumber || "N/A"}
             </Typography>
           </Box>
-        </Grid>
-      </Grid>
+          <Box sx={{ minWidth: { xs: 120, sm: 140 } }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+            >
+              Incident Date
+            </Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{ fontSize: "0.95rem" }}
+            >
+              {caseData.dateOfIncident
+                ? new Date(caseData.dateOfIncident).toLocaleDateString()
+                : "N/A"}
+            </Typography>
+          </Box>
+          <Box sx={{ minWidth: { xs: 120, sm: 140 } }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+            >
+              Job Type
+            </Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{ fontSize: "0.95rem" }}
+            >
+              {caseData.jobType || "N/A"}
+            </Typography>
+          </Box>
+          <Box sx={{ minWidth: { xs: 120, sm: 140 } }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+            >
+              Coverage Status
+            </Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{ fontSize: "0.95rem" }}
+            >
+              {caseData.insuranceInformation?.coverage?.hasGlassCoverage
+                ? "Covered"
+                : "Not Covered"}
+            </Typography>
+          </Box>
+          <Box sx={{ minWidth: { xs: 120, sm: 140 } }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+            >
+              Deductible
+            </Typography>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              sx={{ fontSize: "0.95rem" }}
+            >
+              {caseData.insuranceInformation?.coverage?.deductible
+                ? `${caseData.insuranceInformation.coverage.deductible} ${
+                    caseData.insuranceInformation.coverage.deductibleCurrency ||
+                    "NOK"
+                  }`
+                : "N/A"}
+            </Typography>
+          </Box>
+          <Box sx={{ minWidth: { xs: 120, sm: 140 } }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.75rem" }}
+            >
+              VAT Required
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              {caseData.requiresVAT ? "Yes" : "No"}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.75rem" }}
+            >
+              Workshop
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              {caseData.workshop?.name || "N/A"}
+            </Typography>
+          </Box>
+        </Box>
+        <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+          <Typography variant="caption" color="text.secondary">
+            Last updated:{" "}
+            {caseData.lastModified
+              ? formatDateTime(caseData.lastModified)
+              : caseData.registrationDate
+              ? formatDateTime(caseData.registrationDate)
+              : "N/A"}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block">
+            by {caseData.caseWorker?.name || "System"}
+          </Typography>
+        </Box>
+      </Box>
     </Paper>
   );
 };
@@ -1128,7 +1232,14 @@ const CaseDetails = () => {
   };
 
   return (
-    <Box sx={{ width: "100%", p: 1 }}>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "1400px",
+        mx: "auto",
+        p: { xs: 2, sm: 3, md: 4 },
+      }}
+    >
       <CaseHeader caseData={caseData} />
 
       {/* Verification Steps Section with Expandable Details */}
