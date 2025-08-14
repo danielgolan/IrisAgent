@@ -26,11 +26,12 @@ const clearCacheIfNeeded = () => {
   }
 };
 
-// Multi-field search capability with optimizations
+// Multi-field search capability with weighted ranking and wildcard matching
 export const enhancedSearchCases = (cases, query) => {
-  if (!query || !query.trim()) return cases;
+  if (!query || !query.trim() || query.trim().length < 2) return cases;
 
-  const searchTerm = query.toLowerCase().trim();
+  // Strip spaces and prepare search term with wildcard behavior
+  const searchTerm = query.toLowerCase().replace(/\s+/g, "");
 
   // Check cache first
   const cacheKey = `search:${searchTerm}`;
@@ -38,31 +39,205 @@ export const enhancedSearchCases = (cases, query) => {
     return searchCache.get(cacheKey);
   }
 
-  const results = cases.filter((caseItem) => {
-    // Early exit for exact matches
-    if (
-      caseItem.caseNumber?.toLowerCase() === searchTerm ||
-      caseItem.vehicle?.vehicleLicenseNumber?.toLowerCase() === searchTerm
+  // Create scored results to handle priority and deduplication
+  const scoredResults = new Map();
+
+  cases.forEach((caseItem) => {
+    let score = 0;
+    let matchType = "";
+    let matchedValue = "";
+
+    // Priority 1: Case Number (exact match)
+    if (caseItem.caseNumber?.toLowerCase().replace(/\s+/g, "") === searchTerm) {
+      score = 1000;
+      matchType = "case-exact";
+      matchedValue = caseItem.caseNumber;
+    }
+    // Priority 2: VRN (exact match)
+    else if (
+      caseItem.vehicle?.vehicleLicenseNumber
+        ?.toLowerCase()
+        .replace(/\s+/g, "") === searchTerm
     ) {
-      return true;
+      score = 900;
+      matchType = "vrn-exact";
+      matchedValue = caseItem.vehicle.vehicleLicenseNumber;
+    }
+    // Priority 3: Case Number (partial match with wildcard)
+    else if (
+      caseItem.caseNumber
+        ?.toLowerCase()
+        .replace(/\s+/g, "")
+        .includes(searchTerm)
+    ) {
+      score = 800;
+      matchType = "case-partial";
+      matchedValue = caseItem.caseNumber;
+    }
+    // Priority 4: VRN (partial match with wildcard)
+    else if (
+      caseItem.vehicle?.vehicleLicenseNumber
+        ?.toLowerCase()
+        .replace(/\s+/g, "")
+        .includes(searchTerm)
+    ) {
+      score = 700;
+      matchType = "vrn-partial";
+      matchedValue = caseItem.vehicle.vehicleLicenseNumber;
+    }
+    // Priority 5: Vehicle Make (with wildcard)
+    else if (
+      caseItem.vehicle?.brandName
+        ?.toLowerCase()
+        .replace(/\s+/g, "")
+        .includes(searchTerm)
+    ) {
+      score = 600;
+      matchType = "make";
+      matchedValue = caseItem.vehicle.brandName;
+    }
+    // Priority 6: Vehicle Model (with wildcard)
+    else if (
+      caseItem.vehicle?.model
+        ?.toLowerCase()
+        .replace(/\s+/g, "")
+        .includes(searchTerm)
+    ) {
+      score = 500;
+      matchType = "model";
+      matchedValue = caseItem.vehicle.model;
+    }
+    // Priority 7: Workshop Name (with wildcard)
+    else if (
+      caseItem.workshop?.name
+        ?.toLowerCase()
+        .replace(/\s+/g, "")
+        .includes(searchTerm)
+    ) {
+      score = 400;
+      matchType = "workshop";
+      matchedValue = caseItem.workshop.name;
+    }
+    // Priority 8: Case Worker Organization (with wildcard)
+    else if (
+      caseItem.caseWorker?.organizationName
+        ?.toLowerCase()
+        .replace(/\s+/g, "")
+        .includes(searchTerm)
+    ) {
+      score = 300;
+      matchType = "organization";
+      matchedValue = caseItem.caseWorker.organizationName;
     }
 
-    // Search only in case number and license plate fields
-    const searchableFields = [
-      caseItem.caseNumber,
-      caseItem.vehicle?.vehicleLicenseNumber,
-    ];
-
-    return searchableFields.some((field) =>
-      field?.toString().toLowerCase().includes(searchTerm)
-    );
+    // If we found a match, add to results (avoiding duplicates)
+    if (score > 0) {
+      const existingEntry = scoredResults.get(caseItem.id);
+      // Keep the highest scoring match for each case
+      if (!existingEntry || score > existingEntry.score) {
+        scoredResults.set(caseItem.id, {
+          caseItem: {
+            ...caseItem,
+            _searchMatch: {
+              type: matchType,
+              value: matchedValue,
+              query: searchTerm,
+            },
+          },
+          score,
+        });
+      }
+    }
   });
+
+  // Convert to sorted array by score (highest first)
+  const results = Array.from(scoredResults.values())
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.caseItem);
 
   // Cache the results
   clearCacheIfNeeded();
   searchCache.set(cacheKey, results);
 
   return results;
+};
+
+// Highlight matching text with underlines
+export const highlightMatch = (text, query) => {
+  if (!text || !query || query.length < 2) return text;
+
+  const searchTerm = query.toLowerCase().replace(/\s+/g, "");
+  const textLower = text.toLowerCase().replace(/\s+/g, "");
+  const originalText = text.toString();
+
+  // Find the match position in the normalized text
+  const matchIndex = textLower.indexOf(searchTerm);
+  if (matchIndex === -1) return originalText;
+
+  // Map back to original text positions (accounting for spaces)
+  let originalIndex = 0;
+  let normalizedIndex = 0;
+
+  // Find start position in original text
+  while (normalizedIndex < matchIndex && originalIndex < originalText.length) {
+    if (originalText[originalIndex] !== " ") {
+      normalizedIndex++;
+    }
+    originalIndex++;
+  }
+
+  const startPos = originalIndex;
+
+  // Find end position in original text
+  let matchLength = 0;
+  while (
+    matchLength < searchTerm.length &&
+    originalIndex < originalText.length
+  ) {
+    if (originalText[originalIndex] !== " ") {
+      matchLength++;
+    }
+    originalIndex++;
+  }
+
+  const endPos = originalIndex;
+
+  // Return text with underlined match
+  return (
+    originalText.substring(0, startPos) +
+    "<u>" +
+    originalText.substring(startPos, endPos) +
+    "</u>" +
+    originalText.substring(endPos)
+  );
+};
+
+// Get search match context for display
+export const getSearchMatchContext = (caseItem) => {
+  if (!caseItem._searchMatch) return null;
+
+  const { type } = caseItem._searchMatch;
+
+  switch (type) {
+    case "case-exact":
+      return { label: "Case Number (exact)", icon: "🎯", priority: "high" };
+    case "case-partial":
+      return { label: "Case Number", icon: "📋", priority: "high" };
+    case "vrn-exact":
+      return { label: "VRN (exact)", icon: "🎯", priority: "high" };
+    case "vrn-partial":
+      return { label: "License Plate", icon: "🚗", priority: "medium" };
+    case "make":
+      return { label: "Vehicle Make", icon: "🏭", priority: "low" };
+    case "model":
+      return { label: "Vehicle Model", icon: "🚙", priority: "low" };
+    case "workshop":
+      return { label: "Workshop", icon: "🔧", priority: "low" };
+    case "organization":
+      return { label: "Organization", icon: "🏢", priority: "low" };
+    default:
+      return null;
+  }
 };
 
 // Optimized search suggestions generator with deduplication

@@ -9,7 +9,7 @@ const Header = ({ onSearchExecute }) => {
       <Container maxWidth="xl">
         <Box className="header-search-container">
           <SearchDropdown
-            placeholder="Search by case number, plate, insurer..."
+            placeholder="Search case number, license plate, make, model, or workshop... (press Enter)"
             onSearchExecute={onSearchExecute}
             autoFocus
             sx={{

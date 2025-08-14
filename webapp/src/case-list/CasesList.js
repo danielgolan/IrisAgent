@@ -16,16 +16,15 @@ import {
   FormControl,
   InputLabel,
   IconButton,
+  Typography,
 } from "@mui/material";
 import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
-import { enhancedSearchCases } from "../utils/searchUtils";
+import { enhancedSearchCases, highlightMatch } from "../utils/searchUtils";
 import { sampleCases } from "../sample-data/sampleCases";
 import { useNavigate, useLocation } from "react-router-dom";
+import "./CasesList.css";
 
 const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [insuranceFilter, setInsuranceFilter] = useState("");
-  const [localStatusFilter, setLocalStatusFilter] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,9 +33,14 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
   const urlQuery = urlParams.get("q") || "";
   const urlStatusFilter = urlParams.get("status");
 
-  // Use URL query if available, otherwise use external or local query
+  const [searchTerm, setSearchTerm] = useState(urlQuery);
+  const [insuranceFilter, setInsuranceFilter] = useState("");
+  const [localStatusFilter, setLocalStatusFilter] = useState("");
+
+  // Use search term from local state (which gets initialized from URL and updated by user)
+  // Only fallback to external query if no URL query and no local search term
   const query =
-    urlQuery || (externalQuery !== undefined ? externalQuery : searchTerm);
+    searchTerm || (externalQuery !== undefined ? externalQuery : "");
 
   // Use URL status filter if available, otherwise use prop
   const effectiveStatusFilter = urlStatusFilter || statusFilter;
@@ -58,16 +62,54 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
     return statuses.sort();
   }, []);
 
-  // Update search term when URL query changes
+  // Update search term when URL query changes (but only if it's different from current search term)
+  // This handles cases like bookmarks, direct URL access, or navigation from other pages
   useEffect(() => {
-    if (urlQuery && urlQuery !== searchTerm) {
+    if (urlQuery !== searchTerm) {
       setSearchTerm(urlQuery);
     }
-  }, [urlQuery, searchTerm]);
+  }, [urlQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const clearSearch = () => {
     setSearchTerm("");
+    // Update URL to remove query parameter
+    const newParams = new URLSearchParams(location.search);
+    newParams.delete("q");
+    const newSearch = newParams.toString();
+    navigate(`/cases${newSearch ? `?${newSearch}` : ""}`);
   };
+
+  const handleSearchChange = (e) => {
+    const newValue = e.target.value;
+    setSearchTerm(newValue);
+  };
+
+  // Debounced URL update
+  useEffect(() => {
+    // Only update URL if searchTerm is different from current URL query
+    if (searchTerm === urlQuery) {
+      return; // No need to update URL if they match
+    }
+
+    const timeoutId = setTimeout(() => {
+      const newParams = new URLSearchParams(location.search);
+      if (searchTerm.trim()) {
+        newParams.set("q", searchTerm.trim());
+      } else {
+        newParams.delete("q");
+      }
+      const newSearch = newParams.toString();
+      const newPath = `/cases${newSearch ? `?${newSearch}` : ""}`;
+
+      // Only navigate if the URL would actually change
+      const currentPath = location.pathname + (location.search || "");
+      if (currentPath !== newPath) {
+        navigate(newPath, { replace: true });
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, urlQuery, location.search, location.pathname, navigate]);
 
   const filteredCases = useMemo(() => {
     let base = enhancedSearchCases(sampleCases, query);
@@ -91,7 +133,7 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
   }, [query, effectiveStatusFilter, localStatusFilter, insuranceFilter]);
 
   return (
-    <Box sx={{ padding: 3 }}>
+    <Box>
       {!hideSearch && (
         <>
           <Box
@@ -109,9 +151,9 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
             }}
           >
             <TextField
-              placeholder="Search ID or license plate..."
+              placeholder="Search case number, license plate, make, model, or workshop..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               sx={{
                 flex: 1,
                 maxWidth: "500px",
@@ -395,60 +437,167 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
         </>
       )}
 
-      <TableContainer component={Paper} sx={{ borderRadius: "8px" }}>
-        <Table>
+      {/* Search Results Summary */}
+      {query && query.trim().length >= 2 && (
+        <Box sx={{ marginBottom: 2 }}>
+          <Paper sx={{ 
+            padding: 2, 
+            backgroundColor: "#f8fafc", 
+            border: "1px solid #e2e8f0",
+            borderRadius: "8px"
+          }}>
+            <Typography variant="body2" color="text.secondary">
+              Found <strong>{filteredCases.length}</strong> result{filteredCases.length !== 1 ? 's' : ''} for "{query}"
+              {filteredCases.length > 0 && (
+                <span> • Ordered by relevance (case numbers, license plates, then vehicles)</span>
+              )}
+            </Typography>
+          </Paper>
+        </Box>
+      )}
+
+      <TableContainer component={Paper} sx={{ borderRadius: "8px", width: "100%" }}>
+        <Table sx={{ tableLayout: "fixed", width: "100%" }}>
           <TableHead>
             <TableRow>
-              <TableCell>Case Number</TableCell>
-              <TableCell>LICENSE PLATE</TableCell>
-              <TableCell>INCIDENT DATE</TableCell>
-              <TableCell>STATUS</TableCell>
+              <TableCell sx={{ width: "12%" }}>Case Number</TableCell>
+              <TableCell sx={{ width: "12%" }}>LICENSE PLATE</TableCell>
+              <TableCell sx={{ width: "15%" }}>VEHICLE</TableCell>
+              <TableCell sx={{ width: "20%" }}>WORKSHOP</TableCell>
+              <TableCell sx={{ width: "18%" }}>ORGANIZATION</TableCell>
+              <TableCell sx={{ width: "13%" }}>INCIDENT DATE</TableCell>
+              <TableCell sx={{ width: "10%" }}>STATUS</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredCases.map((caseItem) => (
-              <TableRow
-                key={caseItem.id}
-                hover
-                sx={{
-                  cursor: "pointer",
-                  "&:hover": { backgroundColor: "#f5f5f5" },
-                }}
-                onClick={() => navigate(`/case/${caseItem.id}`)}
-              >
-                <TableCell sx={{ fontWeight: 500 }}>
-                  {caseItem.caseNumber}
-                </TableCell>
-                <TableCell>{caseItem.vehicle?.vehicleLicenseNumber}</TableCell>
-                <TableCell>
-                  {caseItem.dateOfIncident
-                    ? new Date(caseItem.dateOfIncident).toLocaleDateString()
-                    : "N/A"}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={caseItem.status}
-                    size="small"
-                    sx={{
-                      backgroundColor:
-                        caseItem.status === "InvoiceApproved"
-                          ? "#e8f5e9"
-                          : caseItem.status === "Failed"
-                          ? "#ffebee"
-                          : "#fff3e0",
-                      color:
-                        caseItem.status === "InvoiceApproved"
-                          ? "#2e7d32"
-                          : caseItem.status === "Failed"
-                          ? "#c62828"
-                          : "#e65100",
-                      fontWeight: 500,
-                      borderRadius: "4px",
-                    }}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
+            {filteredCases.map((caseItem) => {
+              return (
+                <TableRow
+                  key={caseItem.id}
+                  hover
+                  sx={{
+                    cursor: "pointer",
+                    "&:hover": { backgroundColor: "#f5f5f5" },
+                  }}
+                  onClick={() => navigate(`/case/${caseItem.id}`)}
+                >
+                  <TableCell sx={{ 
+                    fontWeight: 500, 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap" 
+                  }}>
+                    <span
+                      className="search-highlight"
+                      dangerouslySetInnerHTML={{
+                        __html: highlightMatch(caseItem.caseNumber, query),
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap" 
+                  }}>
+                    <span
+                      className="search-highlight"
+                      dangerouslySetInnerHTML={{
+                        __html: highlightMatch(
+                          caseItem.vehicle?.vehicleLicenseNumber,
+                          query
+                        ),
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap" 
+                  }}>
+                    <Box className="search-highlight">
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: highlightMatch(
+                            caseItem.vehicle?.brandName,
+                            query
+                          ),
+                        }}
+                      />{" "}
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: highlightMatch(
+                            caseItem.vehicle?.model,
+                            query
+                          ),
+                        }}
+                      />
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap" 
+                  }}>
+                    <span
+                      className="search-highlight"
+                      dangerouslySetInnerHTML={{
+                        __html: highlightMatch(caseItem.workshop?.name, query),
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap" 
+                  }}>
+                    <span
+                      className="search-highlight"
+                      dangerouslySetInnerHTML={{
+                        __html: highlightMatch(
+                          caseItem.caseWorker?.organizationName,
+                          query
+                        ),
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell sx={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap" 
+                  }}>
+                    {caseItem.dateOfIncident
+                      ? new Date(caseItem.dateOfIncident).toLocaleDateString()
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell sx={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap" 
+                  }}>
+                    <Chip
+                      label={caseItem.status}
+                      size="small"
+                      sx={{
+                        backgroundColor:
+                          caseItem.status === "InvoiceApproved"
+                            ? "#e8f5e9"
+                            : caseItem.status === "Failed"
+                            ? "#ffebee"
+                            : "#fff3e0",
+                        color:
+                          caseItem.status === "InvoiceApproved"
+                            ? "#2e7d32"
+                            : caseItem.status === "Failed"
+                            ? "#c62828"
+                            : "#e65100",
+                        fontWeight: 500,
+                        borderRadius: "4px",
+                      }}
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

@@ -1,0 +1,22 @@
+/* Search highlighting styles */
+.search-highlight u {
+  text-decoration: underline;
+  text-decoration-color: #1976d2;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  color: inherit;
+  font-weight: inherit;
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.search-highlight u:hover {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+/* Ensure text doesn't break awkwardly */
+.search-highlight {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}

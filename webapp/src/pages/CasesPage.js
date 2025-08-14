@@ -9,7 +9,7 @@ const CasesPage = () => {
   const statusFilter = urlParams.get("status");
 
   return (
-    <Box sx={{ padding: 3 }}>
+    <Box sx={{ padding: "24px 10px", maxWidth: "1400px", width: "100%" }}>
       <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
         <Typography variant="h4" component="h1" fontWeight={600}>
           Cases
