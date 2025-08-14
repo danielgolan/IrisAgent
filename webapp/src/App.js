@@ -46,7 +46,16 @@ function App() {
       <Router>
         <Box sx={{ display: "flex" }}>
           <Sidebar />
-          <Box component="main" sx={{ flexGrow: 1, p: 1, marginLeft: "40px", width: "100%" }}>
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 1,
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/search" element={<SearchComponent />} />

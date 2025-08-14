@@ -61,10 +61,12 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
     return statuses.sort();
   }, []);
 
-  // Initialize search term from URL on component mount
+  // URL synchronization effects
   useEffect(() => {
-    setSearchTerm(urlQuery);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (urlQuery !== searchTerm) {
+      setSearchTerm(urlQuery);
+    }
+  }, [urlQuery]);
 
   const clearSearch = () => {
     setSearchTerm("");
@@ -125,9 +127,9 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
   }, [query, effectiveStatusFilter, localStatusFilter, insuranceFilter]);
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box>
       {!hideSearch ? (
-        <Paper sx={{ borderRadius: "8px", overflow: "hidden", width: "100%" }}>
+        <Paper sx={{ borderRadius: "8px", overflow: "hidden" }}>
           {/* Search and Filter Section */}
           <Box
             sx={{
@@ -415,8 +417,8 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
                 <TableCell sx={{ width: "15%" }}>VEHICLE</TableCell>
                 <TableCell sx={{ width: "20%" }}>WORKSHOP</TableCell>
                 <TableCell sx={{ width: "18%" }}>ORGANIZATION</TableCell>
-                <TableCell sx={{ width: "8%" }}>INCIDENT DATE</TableCell>
-                <TableCell sx={{ width: "15%" }}>STATUS</TableCell>
+                <TableCell sx={{ width: "13%" }}>INCIDENT DATE</TableCell>
+                <TableCell sx={{ width: "10%" }}>STATUS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -582,8 +584,8 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
                 <TableCell sx={{ width: "15%" }}>VEHICLE</TableCell>
                 <TableCell sx={{ width: "20%" }}>WORKSHOP</TableCell>
                 <TableCell sx={{ width: "18%" }}>ORGANIZATION</TableCell>
-                <TableCell sx={{ width: "8%" }}>INCIDENT DATE</TableCell>
-                <TableCell sx={{ width: "15%" }}>STATUS</TableCell>
+                <TableCell sx={{ width: "13%" }}>INCIDENT DATE</TableCell>
+                <TableCell sx={{ width: "10%" }}>STATUS</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
