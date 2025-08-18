@@ -1,17 +1,17 @@
 /* Root spacing */
 .homepage-root {
-  padding-top: 16px;
-  padding-bottom: 64px;
-  padding-left: 16px;
-  padding-right: 32px;
+  padding-top: 8px; /* further reduced */
+  padding-bottom: 16px; /* further reduced */
+  padding-left: 8px; /* further reduced */
+  padding-right: 12px; /* further reduced */
 }
 
 /* Status cards grid */
 .modern-status-cards {
-  margin-bottom: 40px;
+  margin-bottom: 16px; /* reduced margin */
   position: relative;
   z-index: 1;
-  gap: 24px; /* increased spacing between cards */
+  gap: 8px; /* reduced spacing between cards */
   justify-content: space-evenly; /* distribute cards evenly */
   display: flex; /* make this a flex container */
   flex-wrap: wrap; /* allow wrapping on smaller screens */
@@ -19,15 +19,15 @@
 
 /* Individual status card */
 .status-card {
-  padding: 24px 26px;
+  padding: 12px 14px; /* further reduced padding */
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 8px; /* reduced gap even more */
   cursor: pointer;
-  border-radius: 28px;
+  border-radius: 16px; /* smaller border radius */
   background: linear-gradient(145deg, #ffffff 0%, #f8fafb 100%);
   border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.12); /* smaller shadow */
   transition: box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
@@ -60,7 +60,7 @@
 }
 
 .status-card-icon svg {
-  font-size: 32px;
+  font-size: 20px; /* smaller icon size */
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 .status-card-value {
@@ -75,21 +75,21 @@
   color: #718096;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 10px;
+  letter-spacing: 0.8px; /* reduced letter spacing */
+  font-size: 8px; /* smaller font size */
 }
 
 /* Recent cases */
 .modern-recent-cases {
-  margin-bottom: 48px;
+  margin-bottom: 16px; /* reduced bottom margin */
 }
 
 .recent-cases-card {
   padding: 0; /* removed padding to extend gradient upwards */
-  border-radius: 40px; /* increased border radius for more rounded corners */
+  border-radius: 16px; /* smaller border radius for better proportion */
   background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
   border: 1px solid rgba(0, 0, 0, 0.03);
-  box-shadow: 0 16px 48px -16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.2); /* smaller shadow */
   overflow: hidden;
   backdrop-filter: blur(10px);
 }
@@ -98,7 +98,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 28px 32px 12px; /* increased top padding to extend gradient upwards */
+  padding: 12px 16px 6px; /* reduced padding */
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   background: linear-gradient(135deg, #f7faff 0%, #ffffff 100%);
   position: relative;
@@ -112,7 +112,7 @@
 .recent-cases-card .MuiTableHead-root .MuiTableCell-root {
   background: linear-gradient(135deg, #f7faff 0%, #ffffff 100%);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 12px 16px;
+  padding: 6px 10px; /* further reduced padding */
 }
 
 .recent-cases-card .MuiTableBody-root .MuiTableRow-root {
@@ -131,7 +131,7 @@
 }
 
 .recent-cases-card .MuiTableCell-root {
-  padding: 12px 16px;
+  padding: 6px 10px; /* further reduced padding */
   border-bottom: none;
 }
 
@@ -206,25 +206,34 @@
   font-size: 0.9em;
 }
 
-@media (max-width: 900px) {
-  .modern-hero {
-    padding: 32px 32px 40px; /* reduced padding for medium screens */
-  }
-  .recent-cases-card {
-    border-radius: 32px; /* slightly less rounded on medium screens */
-  }
-  .status-card {
-    border-radius: 24px;
+@media (max-width: 1200px) {
+  .homepage-root {
+    padding-left: 8px;
+    padding-right: 12px;
   }
   .modern-status-cards {
-    gap: 16px; /* reduced gap for medium screens */
+    gap: 8px;
+  }
+  .status-card {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 900px) {
+  .recent-cases-card {
+    border-radius: 20px;
+  }
+  .status-card {
+    border-radius: 16px;
+    padding: 10px 12px;
+  }
+  .modern-status-cards {
+    gap: 8px;
   }
 }
 
 @media (max-width: 600px) {
-  .modern-hero {
-    padding: 28px 24px 36px; /* reduced padding for mobile */
-  }
   .status-card {
     padding: 20px 20px;
   }
@@ -235,15 +244,7 @@
   }
 }
 
-/* Additional modern touches */
-.homepage-root {
-  padding-top: 16px;
-  padding-bottom: 64px;
-  padding-left: 16px;
-  padding-right: 32px;
-  position: relative;
-}
-
+/* Additional modern touches and accessibility */
 .homepage-root:before {
   content: "";
   position: fixed;
@@ -285,8 +286,7 @@ html {
 
 /* Improve text rendering */
 .status-card-value,
-.recent-case-primary,
-.modern-hero-title {
+.recent-case-primary {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

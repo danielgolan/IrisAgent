@@ -22,6 +22,7 @@ import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { enhancedSearchCases, highlightMatch } from "../utils/searchUtils";
 import { sampleCases } from "../sample-data/sampleCases";
 import { useNavigate, useLocation } from "react-router-dom";
+import StatusChip from "../components/StatusChip";
 import "./CasesList.css";
 
 const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
@@ -541,26 +542,9 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      <Chip
+                      <StatusChip
                         label={caseItem.status}
-                        size="small"
-                        sx={{
-                          backgroundColor:
-                            caseItem.status === "InvoiceApproved"
-                              ? "#e8f5e9"
-                              : caseItem.status === "Failed"
-                              ? "#ffebee"
-                              : "#fff3e0",
-                          color:
-                            caseItem.status === "InvoiceApproved"
-                              ? "#2e7d32"
-                              : caseItem.status === "Failed"
-                              ? "#d32f2f"
-                              : "#f57c00",
-                          fontWeight: 500,
-                          fontSize: "0.75rem",
-                          borderRadius: "6px",
-                        }}
+                        status={caseItem.status}
                       />
                     </TableCell>
                   </TableRow>
@@ -708,26 +692,9 @@ const CasesList = ({ externalQuery, statusFilter, hideSearch = false }) => {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      <Chip
+                      <StatusChip
                         label={caseItem.status}
-                        size="small"
-                        sx={{
-                          backgroundColor:
-                            caseItem.status === "InvoiceApproved"
-                              ? "#e8f5e9"
-                              : caseItem.status === "Failed"
-                              ? "#ffebee"
-                              : "#fff3e0",
-                          color:
-                            caseItem.status === "InvoiceApproved"
-                              ? "#2e7d32"
-                              : caseItem.status === "Failed"
-                              ? "#d32f2f"
-                              : "#f57c00",
-                          fontWeight: 500,
-                          fontSize: "0.75rem",
-                          borderRadius: "6px",
-                        }}
+                        status={caseItem.status}
                       />
                     </TableCell>
                   </TableRow>

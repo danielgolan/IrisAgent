@@ -50,20 +50,22 @@ const SearchDropdown = ({
           sx={{
             background: "rgba(255,255,255,0.95)",
             backdropFilter: "blur(20px)",
-            borderRadius: "40px",
-            boxShadow: "0 8px 32px -8px rgba(0,0,0,0.2)",
+            borderRadius: "32px" /* reduced from 40px */,
+            boxShadow: "0 4px 16px -4px rgba(0,0,0,0.2)" /* reduced shadow */,
             transition: "box-shadow .2s ease",
             "&:hover": {
-              boxShadow: "0 12px 40px -8px rgba(0,0,0,0.25)",
+              boxShadow:
+                "0 6px 20px -4px rgba(0,0,0,0.25)" /* reduced shadow */,
             },
             "&:focus-within": {
-              boxShadow: "0 12px 40px -8px rgba(25, 118, 210, 0.3)",
+              boxShadow:
+                "0 6px 20px -4px rgba(25, 118, 210, 0.3)" /* reduced shadow */,
             },
             "& .MuiOutlinedInput-root": {
-              borderRadius: "40px",
-              height: 64,
-              fontSize: 18,
-              px: 3,
+              borderRadius: "32px" /* reduced from 40px */,
+              height: 48 /* reduced from 64px */,
+              fontSize: 16 /* reduced from 18px */,
+              px: 2.5 /* reduced padding */,
               fontWeight: 500,
               "& fieldset": {
                 border: "none",
@@ -91,8 +93,8 @@ const SearchDropdown = ({
                       alignItems: "center",
                       justifyContent: "center",
                       borderRadius: "50%",
-                      width: 24,
-                      height: 24,
+                      width: 20 /* reduced from 24 */,
+                      height: 20 /* reduced from 24 */,
                       mr: 1,
                       "&:hover": {
                         backgroundColor: "rgba(0,0,0,0.04)",
@@ -108,10 +110,10 @@ const SearchDropdown = ({
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: "rgba(0,0,0,0.05)",
-                    borderRadius: "8px",
-                    px: 1,
-                    py: 0.5,
-                    fontSize: "0.75rem",
+                    borderRadius: "6px" /* reduced from 8px */,
+                    px: 0.8 /* reduced padding */,
+                    py: 0.3 /* reduced padding */,
+                    fontSize: "0.7rem" /* reduced from 0.75rem */,
                     color: "text.secondary",
                     fontWeight: 500,
                   }}

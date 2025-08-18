@@ -2,45 +2,61 @@
 .app-header {
   background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
   color: #fff;
-  padding: 40px 48px 48px;
-  position: relative;
-  box-shadow: 0 20px 60px -12px rgba(25, 118, 210, 0.4);
+  padding: 12px 16px; /* increased from 4px to 12px for more breathing room */
+  position: fixed;
+  top: 0;
+  left: 180px; /* Updated for new sidebar width */
+  right: 0;
+  width: 80%;
+  max-width: calc(100% - 180px); /* Updated for new sidebar width */
+  margin: 0 auto;
+  box-shadow: 0 2px 12px rgba(25, 118, 210, 0.3); /* slightly increased shadow */
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 36px;
-  margin: 16px 24px 24px 16px;
+  border-radius: 0 0 16px 16px; /* increased border radius for more elegant look */
   z-index: 1000;
-}
-
-.app-header:before,
-.app-header:after {
-  content: "";
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(
-    circle at center,
-    rgba(255, 255, 255, 0.15),
-    rgba(255, 255, 255, 0) 70%
-  );
-  top: -200px;
-  right: -180px;
-  mix-blend-mode: soft-light;
-  pointer-events: none;
-}
-
-.app-header:after {
-  top: auto;
-  bottom: -250px;
-  left: -220px;
-  right: auto;
-  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-search-container {
   display: flex;
   justify-content: center;
   width: 100%;
+  max-width: 600px;
   position: relative;
   z-index: 1001;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .app-header {
+    left: 160px; /* For tablet/small laptop sidebar width */
+    max-width: calc(100% - 160px);
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    left: 140px; /* For mobile sidebar width */
+    width: 90%;
+    max-width: calc(90% - 140px);
+    padding: 8px 12px; /* increased padding for mobile */
+    border-radius: 0 0 12px 12px; /* larger border radius */
+  }
+
+  .header-search-container {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    left: 0; /* On mobile, header spans full width */
+    width: 100%;
+    max-width: 100%;
+    padding: 6px 8px; /* increased padding for mobile */
+    border-radius: 0;
+  }
 }

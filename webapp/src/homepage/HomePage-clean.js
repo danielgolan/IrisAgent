@@ -33,7 +33,7 @@ const HomePage = () => {
   return (
     <>
       <Header onSearchExecute={handleSearchExecute} />
-      <Container maxWidth="lg" className="homepage-root">
+      <Container maxWidth="xl" className="homepage-root">
         <StatusCardsGrid counts={counts} onStatusClick={handleStatusClick} />
         <RecentCasesTable
           recentCases={recentCases}

@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import CasesPage from "./pages/CasesPage";
 import { ThemeProvider, createTheme, Box } from "@mui/material";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -39,6 +44,33 @@ const theme = createTheme({
   },
 });
 
+const MainContent = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === "/";
+
+  return (
+    <Box
+      component="main"
+      sx={{
+        flexGrow: 1,
+        p: 1,
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        marginTop: isHomePage ? "84px" : "20px", // increased to accommodate larger header padding
+      }}
+    >
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/search" element={<SearchComponent />} />
+        <Route path="/case/:id" element={<CaseDetails />} />
+        <Route path="/archive" element={<ArchivePage />} />
+        <Route path="/cases" element={<CasesPage />} />
+      </Routes>
+    </Box>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -46,24 +78,7 @@ function App() {
       <Router>
         <Box sx={{ display: "flex" }}>
           <Sidebar />
-          <Box
-            component="main"
-            sx={{
-              flexGrow: 1,
-              p: 1,
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/search" element={<SearchComponent />} />
-              <Route path="/case/:id" element={<CaseDetails />} />
-              <Route path="/archive" element={<ArchivePage />} />
-              <Route path="/cases" element={<CasesPage />} />
-            </Routes>
-          </Box>
+          <MainContent />
         </Box>
       </Router>
     </ThemeProvider>

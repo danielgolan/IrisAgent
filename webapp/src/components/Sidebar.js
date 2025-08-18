@@ -15,13 +15,13 @@ import {
 } from "@mui/icons-material";
 import styled from "styled-components";
 
-const DRAWER_WIDTH = 240;
+const DRAWER_WIDTH = 180; /* reduced from 240px to 180px */
 
 const LogoContainer = styled(Box)`
-  padding: 16px;
+  padding: 12px; /* reduced from 16px */
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px; /* reduced from 8px */
 `;
 
 const Sidebar = () => {
@@ -39,18 +39,30 @@ const Sidebar = () => {
       sx={{
         width: DRAWER_WIDTH,
         flexShrink: 0,
+        "@media (max-width: 1024px)": {
+          width: 160,
+        },
+        "@media (max-width: 768px)": {
+          width: 140,
+        },
         "& .MuiDrawer-paper": {
           width: DRAWER_WIDTH,
           boxSizing: "border-box",
           backgroundColor: "#1a347e",
           color: "white",
           borderRight: "1px solid #233876",
+          "@media (max-width: 1024px)": {
+            width: 160 /* even smaller on tablets/small laptops */,
+          },
+          "@media (max-width: 768px)": {
+            width: 140 /* minimal on mobile */,
+          },
         },
       }}
     >
       <LogoContainer>
         <SecurityIcon sx={{ color: "white" }} />
-        <Box sx={{ color: "white", fontSize: "1.2rem", fontWeight: "bold" }}>
+        <Box sx={{ color: "white", fontSize: "1.0rem", fontWeight: "bold" }}>
           NotIrisProvider
         </Box>
       </LogoContainer>
@@ -63,13 +75,14 @@ const Sidebar = () => {
               selected={location.pathname === item.path}
               sx={{
                 borderRadius: "8px",
-                margin: "4px 8px",
-                padding: "10px 16px",
+                margin: "2px 6px" /* reduced margins */,
+                padding: "8px 12px" /* reduced padding */,
                 backgroundColor:
                   location.pathname === item.path ? "#233876" : "transparent",
                 color: "white",
                 "& .MuiListItemIcon-root": {
                   color: "white",
+                  minWidth: "32px" /* reduced icon spacing */,
                 },
                 "&:hover": {
                   backgroundColor: "#233876",
