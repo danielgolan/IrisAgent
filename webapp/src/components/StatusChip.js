@@ -7,67 +7,67 @@ const getStatusChipStyle = (status) => {
   const statusMappings = {
     // Success/Approved statuses
     InvoiceApproved: {
-      backgroundColor: "#e8f5e9",
+      backgroundColor: "transparent",
       color: "#2e7d32",
     },
     "Invoice Approved": {
-      backgroundColor: "#e8f5e9",
+      backgroundColor: "transparent",
       color: "#2e7d32",
     },
     Completed: {
-      backgroundColor: "#e8f5e9",
+      backgroundColor: "transparent",
       color: "#2e7d32",
     },
     "Auto-approved": {
-      backgroundColor: "#e8f5e9",
+      backgroundColor: "transparent",
       color: "#2e7d32",
     },
     Approved: {
-      backgroundColor: "#e8f5e9",
+      backgroundColor: "transparent",
       color: "#2e7d32",
     },
 
     // Error/Failed statuses
     Failed: {
-      backgroundColor: "#ffebee",
+      backgroundColor: "transparent",
       color: "#d32f2f",
     },
     Declined: {
-      backgroundColor: "#ffebee",
+      backgroundColor: "transparent",
       color: "#d32f2f",
     },
 
     // Warning/Pending statuses (default orange)
     "Pending Approval": {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     },
     ReadyForApproval: {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     },
     "Ready for Approval": {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     },
     "Auto-warning": {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     },
     Pending: {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     },
     "Waiting Invoice": {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     },
     "Waiting Payment": {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     },
     Open: {
-      backgroundColor: "#e3f2fd",
+      backgroundColor: "transparent",
       color: "#1565c0",
     },
   };
@@ -75,7 +75,7 @@ const getStatusChipStyle = (status) => {
   // Return specific mapping or default to orange warning style
   return (
     statusMappings[status] || {
-      backgroundColor: "#fff3e0",
+      backgroundColor: "transparent",
       color: "#f57c00",
     }
   );
