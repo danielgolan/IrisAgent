@@ -11,6 +11,82 @@ export const debounce = (func, wait) => {
   };
 };
 
+// Status and insurance mapping for smart search
+const STATUS_KEYWORDS = {
+  approval: "For Approval",
+  approved: "For Approval",
+  invoice: "Invoice Control",
+  billing: "Invoice Control",
+  failed: "Failed",
+  error: "Failed",
+  hold: "On Hold",
+  waiting: "On Hold",
+  pending: "On Hold",
+};
+
+const INSURANCE_KEYWORDS = {
+  if: "If",
+  trygg: "Trygg Hansa",
+  gjensidige: "Gjensidige",
+  sparebank: "SpareBank 1",
+  storebrand: "Storebrand",
+};
+
+// Parse search query for structured filters
+export const parseSearchQuery = (query) => {
+  if (!query) return { text: "", filters: {} };
+
+  let remainingText = query.toLowerCase();
+  const filters = {};
+
+  // Extract status filters
+  const statusMatch = remainingText.match(/status:(\w+)/);
+  if (statusMatch) {
+    const statusKey = statusMatch[1];
+    const mappedStatus = STATUS_KEYWORDS[statusKey];
+    if (mappedStatus) {
+      filters.status = mappedStatus;
+      remainingText = remainingText.replace(statusMatch[0], "").trim();
+    }
+  }
+
+  // Extract insurance filters
+  const insuranceMatch = remainingText.match(/insurance:(\w+)/);
+  if (insuranceMatch) {
+    const insuranceKey = insuranceMatch[1];
+    const mappedInsurance = INSURANCE_KEYWORDS[insuranceKey];
+    if (mappedInsurance) {
+      filters.insurance = mappedInsurance;
+      remainingText = remainingText.replace(insuranceMatch[0], "").trim();
+    }
+  }
+
+  // Check for natural language status keywords
+  Object.entries(STATUS_KEYWORDS).forEach(([keyword, status]) => {
+    if (remainingText.includes(keyword)) {
+      filters.status = status;
+      remainingText = remainingText
+        .replace(new RegExp(keyword, "gi"), "")
+        .trim();
+    }
+  });
+
+  // Check for natural language insurance keywords
+  Object.entries(INSURANCE_KEYWORDS).forEach(([keyword, insurance]) => {
+    if (remainingText.includes(keyword)) {
+      filters.insurance = insurance;
+      remainingText = remainingText
+        .replace(new RegExp(keyword, "gi"), "")
+        .trim();
+    }
+  });
+
+  return {
+    text: remainingText.trim(),
+    filters,
+  };
+};
+
 // Memoization cache for search results
 const searchCache = new Map();
 const maxCacheSize = 100;
@@ -30,11 +106,35 @@ const clearCacheIfNeeded = () => {
 export const enhancedSearchCases = (cases, query) => {
   if (!query || !query.trim() || query.trim().length < 2) return cases;
 
+  // Parse the query for structured filters
+  const { text: searchText, filters } = parseSearchQuery(query);
+
+  // If only filters and no text, filter directly
+  if (!searchText && Object.keys(filters).length > 0) {
+    let filteredCases = cases;
+
+    if (filters.status) {
+      filteredCases = filteredCases.filter((c) => c.status === filters.status);
+    }
+
+    if (filters.insurance) {
+      filteredCases = filteredCases.filter(
+        (c) =>
+          c.insuranceInformation?.insuranceProvider?.name === filters.insurance
+      );
+    }
+
+    return filteredCases;
+  }
+
+  // If no search text after parsing, return all cases
+  if (!searchText) return cases;
+
   // Strip spaces and prepare search term with wildcard behavior
-  const searchTerm = query.toLowerCase().replace(/\s+/g, "");
+  const searchTerm = searchText.toLowerCase().replace(/\s+/g, "");
 
   // Check cache first
-  const cacheKey = `search:${searchTerm}`;
+  const cacheKey = `search:${query}`;
   if (searchCache.has(cacheKey)) {
     return searchCache.get(cacheKey);
   }
@@ -151,15 +251,68 @@ export const enhancedSearchCases = (cases, query) => {
   });
 
   // Convert to sorted array by score (highest first)
-  const results = Array.from(scoredResults.values())
+  let results = Array.from(scoredResults.values())
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.caseItem);
+
+  // Apply filters after text search
+  if (filters.status) {
+    results = results.filter((c) => c.status === filters.status);
+  }
+
+  if (filters.insurance) {
+    results = results.filter(
+      (c) =>
+        c.insuranceInformation?.insuranceProvider?.name === filters.insurance
+    );
+  }
 
   // Cache the results
   clearCacheIfNeeded();
   searchCache.set(cacheKey, results);
 
   return results;
+};
+
+// Get search suggestions for auto-complete
+export const getSearchSuggestions = (query) => {
+  const suggestions = [];
+
+  if (!query) return suggestions;
+
+  const lowerQuery = query.toLowerCase();
+
+  // Status suggestions
+  Object.entries(STATUS_KEYWORDS).forEach(([keyword, status]) => {
+    if (
+      keyword.includes(lowerQuery) ||
+      status.toLowerCase().includes(lowerQuery)
+    ) {
+      suggestions.push({
+        type: "status",
+        text: `status:${keyword}`,
+        display: `Status: ${status}`,
+        value: status,
+      });
+    }
+  });
+
+  // Insurance suggestions
+  Object.entries(INSURANCE_KEYWORDS).forEach(([keyword, insurance]) => {
+    if (
+      keyword.includes(lowerQuery) ||
+      insurance.toLowerCase().includes(lowerQuery)
+    ) {
+      suggestions.push({
+        type: "insurance",
+        text: `insurance:${keyword}`,
+        display: `Insurance: ${insurance}`,
+        value: insurance,
+      });
+    }
+  });
+
+  return suggestions.slice(0, 5); // Limit to 5 suggestions
 };
 
 // Highlight matching text with underlines

@@ -28,10 +28,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuItems = [
-    { text: "Dashboard", icon: <SecurityIcon />, path: "/" },
-    { text: "Cases", icon: <CasesIcon />, path: "/cases" },
-  ];
+  const menuItems = [{ text: "Dashboard", icon: <CasesIcon />, path: "/" }];
 
   return (
     <Drawer

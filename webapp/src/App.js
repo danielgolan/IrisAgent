@@ -8,7 +8,7 @@ import CasesPage from "./pages/CasesPage";
 import { ThemeProvider, createTheme, Box } from "@mui/material";
 import CssBaseline from "@mui/material/CssBaseline";
 import Sidebar from "./components/Sidebar";
-import HomePage from "./homepage/HomePage";
+import UnifiedHomePage from "./homepage/UnifiedHomePage";
 import CaseDetails from "./case-details/CaseDetails";
 import ArchivePage from "./archive/ArchivePage";
 import SearchComponent from "./search/SearchComponent";
@@ -61,7 +61,7 @@ const MainContent = () => {
       }}
     >
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<UnifiedHomePage />} />
         <Route path="/search" element={<SearchComponent />} />
         <Route path="/case/:id" element={<CaseDetails />} />
         <Route path="/archive" element={<ArchivePage />} />

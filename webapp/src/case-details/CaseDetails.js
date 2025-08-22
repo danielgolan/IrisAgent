@@ -72,110 +72,175 @@ const getStepStatus = (stepModule, caseData) => {
   const manualStatusField = stepModule.statusField || `${stepModule.id}Status`;
   const manualStatus = caseData[manualStatusField];
 
-  // If agent has manually set status, use that
-  if (manualStatus === "Approved" || manualStatus === "Declined") {
+  // If agent has set a manual status, use it
+  if (manualStatus === "approved" || manualStatus === "declined") {
     return {
-      status:
-        manualStatus.toLowerCase() === "approved" ? "approved" : "declined",
-      chipLabel: manualStatus,
-      chipColor:
-        manualStatus.toLowerCase() === "approved" ? "success" : "error",
-      isAutomatic: false,
-      isReadOnly: manualStatus.toLowerCase() === "approved",
+      status: manualStatus,
+      isReadOnly: manualStatus === "approved",
+      statusChip: manualStatus === "approved" ? "success" : "error",
+      label: manualStatus === "approved" ? "Approved" : "Declined",
     };
   }
 
-  // Check for automatic status determination
-  if (stepModule.statusLogic?.autoApproved?.(caseData)) {
-    return {
-      status: "auto-approved",
-      chipLabel: "Auto-approved",
-      chipColor: "success",
-      isAutomatic: true,
-      isReadOnly: true,
-    };
+  // Otherwise, apply auto-status logic from step module
+  if (stepModule.statusLogic) {
+    if (
+      stepModule.statusLogic.autoApproved &&
+      stepModule.statusLogic.autoApproved(caseData)
+    ) {
+      return {
+        status: "auto-approved",
+        isReadOnly: true,
+        statusChip: "success",
+        label: "Auto-approved",
+      };
+    }
+
+    if (
+      stepModule.statusLogic.autoWarning &&
+      stepModule.statusLogic.autoWarning(caseData)
+    ) {
+      return {
+        status: "auto-warning",
+        isReadOnly: false,
+        statusChip: "warning",
+        label: "Auto-warning",
+      };
+    }
   }
 
-  if (stepModule.statusLogic?.autoWarning?.(caseData)) {
-    return {
-      status: "auto-warning",
-      chipLabel: "Auto-warning",
-      chipColor: "warning",
-      isAutomatic: true,
-      isReadOnly: false,
-    };
-  }
-
-  // Default to pending if no status can be determined
+  // Default to pending if no logic matches
   return {
     status: "pending",
-    chipLabel: "Pending",
-    chipColor: "default",
-    isAutomatic: false,
     isReadOnly: false,
+    statusChip: "default",
+    label: "Pending",
   };
 };
 
-// Helper function to get step field value from case data using dot notation
-const getFieldValue = (caseData, fieldPath) => {
-  const value = fieldPath.split(".").reduce((obj, key) => {
-    if (obj === null || obj === undefined) return undefined;
-    return obj[key];
-  }, caseData);
-
-  // Handle null/undefined
-  if (value === null || value === undefined) {
-    return "N/A";
-  }
-
-  // Handle objects - convert to string representation
-  if (typeof value === "object") {
-    // Handle arrays
-    if (Array.isArray(value)) {
-      return value.length > 0 ? `${value.length} items` : "None";
-    }
-    // Handle objects with name property
-    if (value.name) {
-      return value.name;
-    }
-    // Handle objects - return JSON string or a readable format
-    return JSON.stringify(value);
-  }
-
-  // Format dates for display
-  if (typeof value === "string" && value.includes("T") && value.includes("Z")) {
-    const date = new Date(value);
-    if (!isNaN(date.getTime()) && value !== "0001-01-01T00:00:00Z") {
-      return date.toLocaleDateString("no-NO");
-    }
-  }
-
-  // Handle boolean values
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
-
-  return String(value);
-};
-
-// Icon mapping for step modules
+// Helper function to get step icon
 const getStepIcon = (iconName) => {
   const iconMap = {
-    Security: <InsuranceIcon />,
-    DirectionsCar: <CarIcon />,
-    Assignment: <ReportIcon />,
-    Person: <PersonIcon />,
-    AttachMoney: <PricingIcon />,
-    Tune: <CalibrationIcon />,
-    Image: <ImageIcon />,
-    Receipt: <InvoiceIcon />,
-    Build: <RepairIcon />,
-    FindInPage: <InspectionIcon />,
+    Security: InsuranceIcon,
+    Build: RepairIcon,
+    Assignment: ReportIcon,
+    PersonOutline: PersonIcon,
+    FindInPage: InspectionIcon,
+    AttachMoney: PricingIcon,
+    Image: ImageIcon,
+    Receipt: InvoiceIcon,
+    Tune: CalibrationIcon,
+    Car: CarIcon,
   };
-  return iconMap[iconName] || <CheckIcon />;
+  const IconComponent = iconMap[iconName] || ReportIcon;
+  return <IconComponent />;
 };
 
-// Helper function to create verification step configuration using step modules
+// Helper function to safely get nested object values
+const getFieldValue = (obj, path) => {
+  return path.split(".").reduce((current, key) => current?.[key], obj);
+};
+
+const CaseDetails = () => {
+  const { id } = useParams();
+  const [caseData, setCaseData] = useState(() => getCaseById(id));
+  // Progress state for steps
+  const [checkedSteps, setCheckedSteps] = useState(new Set());
+  const [expandedSteps, setExpandedSteps] = useState(new Set());
+  // Get all step modules and create verification steps (copied from VerificationSteps)
+  const verificationSteps = React.useMemo(() => {
+    const steps = Object.keys(STEP_MODULES)
+      .map((stepId) => createVerificationStep(stepId, caseData))
+      .filter((step) => step !== null)
+      .sort((a, b) => a.order - b.order);
+    return steps;
+  }, [caseData]);
+  const completedSteps = checkedSteps.size;
+  const totalSteps = verificationSteps.length;
+  const progressPercentage =
+    totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
+
+  if (!caseData) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">Case not found</Alert>
+      </Box>
+    );
+  }
+
+  // Handlers for activity log
+  const handleAddComment = (comment) => {
+    setCaseData((prevData) => ({
+      ...prevData,
+      publicComments: [...(prevData.publicComments || []), comment],
+      // Also add to activity log
+      activityLog: [
+        ...(prevData.activityLog || []),
+        {
+          timestamp: comment.timestamp,
+          actor: comment.author,
+          action: `Added public comment: "${comment.content}"`,
+          type: "comment",
+          details: "Visible to workshop",
+        },
+      ],
+    }));
+  };
+
+  const handleAddNote = (note) => {
+    setCaseData((prevData) => ({
+      ...prevData,
+      internalNotes: [...(prevData.internalNotes || []), note],
+      // Also add to activity log
+      activityLog: [
+        ...(prevData.activityLog || []),
+        {
+          timestamp: note.timestamp,
+          actor: note.author,
+          action: `Added internal note: "${note.content}"`,
+          type: "note",
+          details: "Internal only",
+        },
+      ],
+    }));
+  };
+
+  return (
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "1400px",
+        mx: "auto",
+        pt: 0, // Remove top padding completely
+        px: { xs: 2, sm: 3, md: 4 },
+        pb: { xs: 2, sm: 3, md: 4 },
+      }}
+    >
+      <CaseHeader caseData={caseData} progressPercentage={progressPercentage} />
+
+      {/* Verification Steps Section with Expandable Details */}
+      <VerificationSteps
+        caseData={caseData}
+        checkedSteps={checkedSteps}
+        setCheckedSteps={setCheckedSteps}
+        expandedSteps={expandedSteps}
+        setExpandedSteps={setExpandedSteps}
+        completedSteps={completedSteps}
+        totalSteps={totalSteps}
+        progressPercentage={progressPercentage}
+      />
+
+      {/* Activity Log and Notes Section */}
+      <ActivityLog
+        caseData={caseData}
+        onAddComment={handleAddComment}
+        onAddNote={handleAddNote}
+      />
+    </Box>
+  );
+};
+
+// Helper function to create verification step objects
 const createVerificationStep = (stepId, caseData) => {
   const stepModule = STEP_MODULES[stepId];
   if (!stepModule) {
@@ -196,10 +261,16 @@ const createVerificationStep = (stepId, caseData) => {
   };
 };
 
-const VerificationSteps = ({ caseData }) => {
-  const [checkedSteps, setCheckedSteps] = useState(new Set());
-  const [expandedSteps, setExpandedSteps] = useState(new Set());
-
+const VerificationSteps = ({
+  caseData,
+  checkedSteps,
+  setCheckedSteps,
+  expandedSteps,
+  setExpandedSteps,
+  completedSteps,
+  totalSteps,
+  progressPercentage,
+}) => {
   // Get all step modules and create verification steps
   const verificationSteps = React.useMemo(() => {
     const steps = Object.keys(STEP_MODULES)
@@ -219,7 +290,7 @@ const VerificationSteps = ({ caseData }) => {
       }
     });
     setCheckedSteps(approvedSteps);
-  }, [verificationSteps]);
+  }, [verificationSteps, setCheckedSteps]);
 
   // Auto-expand sections that have warnings or errors
   React.useEffect(() => {
@@ -230,7 +301,7 @@ const VerificationSteps = ({ caseData }) => {
       }
     });
     setExpandedSteps(autoExpandedSteps);
-  }, [verificationSteps]);
+  }, [verificationSteps, setExpandedSteps]);
 
   const handleStepToggle = (stepId) => {
     // This function now handles agent override between Approved/Declined
@@ -728,10 +799,6 @@ const VerificationSteps = ({ caseData }) => {
     return renderStepContent(step);
   };
 
-  const completedSteps = checkedSteps.size;
-  const totalSteps = verificationSteps.length;
-  const progressPercentage = (completedSteps / totalSteps) * 100;
-
   return (
     <Card elevation={3} sx={{ mb: 3 }}>
       <CardHeader
@@ -748,13 +815,6 @@ const VerificationSteps = ({ caseData }) => {
         sx={{ pb: 1, px: 3, pt: 3 }}
       />
       <CardContent sx={{ pt: 0, px: 3, pb: 3 }}>
-        <LinearProgress
-          variant="determinate"
-          value={progressPercentage}
-          sx={{ mb: 3, height: 8, borderRadius: 4 }}
-          color={progressPercentage === 100 ? "success" : "primary"}
-        />
-
         <List>
           {verificationSteps.map((step, index) => {
             const isChecked = checkedSteps.has(step.id);
@@ -928,7 +988,7 @@ const formatDateTime = (dateString) => {
   return `${dateStr} ${timeStr}`;
 };
 
-const CaseHeader = ({ caseData }) => {
+const CaseHeader = ({ caseData, progressPercentage }) => {
   const [currentStatus, setCurrentStatus] = useState(caseData.status);
 
   const handleStatusChange = (event) => {
@@ -1245,82 +1305,17 @@ const CaseHeader = ({ caseData }) => {
           </Box>
         </Box>
       </Box>
-    </Paper>
-  );
-};
 
-const CaseDetails = () => {
-  const { id } = useParams();
-  const [caseData, setCaseData] = useState(() => getCaseById(id));
-
-  if (!caseData) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Alert severity="error">Case not found</Alert>
+      {/* Progress Bar at Bottom */}
+      <Box sx={{ mt: 2, mb: 0 }}>
+        <LinearProgress
+          variant="determinate"
+          value={progressPercentage}
+          sx={{ height: 8, borderRadius: 4, width: "100%" }}
+          color={progressPercentage === 100 ? "success" : "primary"}
+        />
       </Box>
-    );
-  }
-
-  // Handlers for activity log
-  const handleAddComment = (comment) => {
-    setCaseData((prevData) => ({
-      ...prevData,
-      publicComments: [...(prevData.publicComments || []), comment],
-      // Also add to activity log
-      activityLog: [
-        ...(prevData.activityLog || []),
-        {
-          timestamp: comment.timestamp,
-          actor: comment.author,
-          action: `Added public comment: "${comment.content}"`,
-          type: "comment",
-          details: "Visible to workshop",
-        },
-      ],
-    }));
-  };
-
-  const handleAddNote = (note) => {
-    setCaseData((prevData) => ({
-      ...prevData,
-      internalNotes: [...(prevData.internalNotes || []), note],
-      // Also add to activity log
-      activityLog: [
-        ...(prevData.activityLog || []),
-        {
-          timestamp: note.timestamp,
-          actor: note.author,
-          action: `Added internal note: "${note.content}"`,
-          type: "note",
-          details: "Internal only",
-        },
-      ],
-    }));
-  };
-
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        maxWidth: "1400px",
-        mx: "auto",
-        pt: 0, // Remove top padding completely
-        px: { xs: 2, sm: 3, md: 4 },
-        pb: { xs: 2, sm: 3, md: 4 },
-      }}
-    >
-      <CaseHeader caseData={caseData} />
-
-      {/* Verification Steps Section with Expandable Details */}
-      <VerificationSteps caseData={caseData} />
-
-      {/* Activity Log and Notes Section */}
-      <ActivityLog
-        caseData={caseData}
-        onAddComment={handleAddComment}
-        onAddNote={handleAddNote}
-      />
-    </Box>
+    </Paper>
   );
 };
 

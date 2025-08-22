@@ -1,16 +1,40 @@
-import React, { useState } from "react";
-import { Box, TextField, InputAdornment } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  TextField,
+  InputAdornment,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+} from "@mui/material";
 import { Search as SearchIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { getSearchSuggestions } from "../utils/searchUtils";
 
 const SearchDropdown = ({
-  placeholder = "Search cases... (case number, license plate, make, model, workshop - press Enter)",
+  placeholder = "Search cases... (try: 'status:failed', 'insurance:if', 'BMW', case numbers, etc.)",
   onSearchExecute,
   autoFocus = false,
   sx = {},
 }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Update suggestions when query changes
+  useEffect(() => {
+    if (query.length > 1) {
+      const searchSuggestions = getSearchSuggestions(query);
+      setSuggestions(searchSuggestions);
+      setShowSuggestions(searchSuggestions.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [query]);
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
@@ -28,6 +52,29 @@ const SearchDropdown = ({
 
   const handleClearSearch = () => {
     setQuery("");
+    setShowSuggestions(false);
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setQuery(suggestion.text);
+    setShowSuggestions(false);
+    // Auto-execute search when clicking a suggestion
+    if (onSearchExecute) {
+      onSearchExecute({ query: suggestion.text });
+    } else {
+      navigate(`/?q=${encodeURIComponent(suggestion.text)}`);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Delay hiding suggestions to allow clicks
+    setTimeout(() => setShowSuggestions(false), 200);
+  };
+
+  const handleInputFocus = () => {
+    if (suggestions.length > 0) {
+      setShowSuggestions(true);
+    }
   };
 
   return (
@@ -40,6 +87,8 @@ const SearchDropdown = ({
         <TextField
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
           placeholder={placeholder}
           autoFocus={autoFocus}
           autoComplete="off"
@@ -125,6 +174,58 @@ const SearchDropdown = ({
           }}
         />
       </Box>
+
+      {/* Search Suggestions Dropdown */}
+      {showSuggestions && suggestions.length > 0 && (
+        <Paper
+          sx={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            mt: 1,
+            borderRadius: "12px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            border: "1px solid #e2e8f0",
+            zIndex: 1000,
+            overflow: "hidden",
+          }}
+        >
+          <List sx={{ py: 0 }}>
+            {suggestions.map((suggestion, index) => (
+              <ListItem
+                key={index}
+                button
+                onClick={() => handleSuggestionClick(suggestion)}
+                sx={{
+                  py: 1.5,
+                  px: 2,
+                  "&:hover": {
+                    backgroundColor: "#f8fafc",
+                  },
+                  borderBottom:
+                    index < suggestions.length - 1
+                      ? "1px solid #f1f5f9"
+                      : "none",
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {suggestion.display}
+                    </Typography>
+                  }
+                  secondary={
+                    <Typography variant="caption" sx={{ color: "#64748b" }}>
+                      {suggestion.text}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      )}
     </Box>
   );
 };

@@ -310,25 +310,7 @@ export default HomePage;
                                 "& .MuiSelect-select": {
                                   padding: "6px 12px",
                                   borderRadius: "16px",
-                                  backgroundColor: (() => {
-                                    const option = STATUS_OPTIONS.find(
-                                      (opt) => opt.value === displayStatus
-                                    );
-                                    switch (option?.color) {
-                                      case "success":
-                                        return "rgba(76, 175, 80, 0.08)";
-                                      case "warning":
-                                        return "rgba(255, 152, 0, 0.08)";
-                                      case "error":
-                                        return "rgba(244, 67, 54, 0.08)";
-                                      case "info":
-                                        return "rgba(33, 150, 243, 0.08)";
-                                      case "primary":
-                                        return "rgba(25, 118, 210, 0.08)";
-                                      default:
-                                        return "rgba(158, 158, 158, 0.08)";
-                                    }
-                                  })(),
+                                  backgroundColor: "transparent",
                                   color: (() => {
                                     const option = STATUS_OPTIONS.find(
                                       (opt) => opt.value === displayStatus
