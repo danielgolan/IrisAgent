@@ -1344,48 +1344,50 @@ const STATUS_OPTIONS = [
 
 // Helper function to get next status and determine if buttons should be shown
 const getStatusTransition = (currentStatus, caseData) => {
-  const hasInvoice = caseData.invoice || 
-    (caseData.attachments && caseData.attachments.some(att => att.attachmentType === "Invoice"));
-  
+  const hasInvoice =
+    caseData.invoice ||
+    (caseData.attachments &&
+      caseData.attachments.some((att) => att.attachmentType === "Invoice"));
+
   switch (currentStatus) {
     case "ForApproval":
       return {
         nextStatus: hasInvoice ? "InvoiceControl" : "AwaitingInvoice",
         nextStatusLabel: hasInvoice ? "Invoice Control" : "Awaiting Invoice",
         showButtons: true,
-        canReject: true
+        canReject: true,
       };
     case "AwaitingInvoice":
       return {
         nextStatus: "InvoiceControl",
         nextStatusLabel: "Invoice Control",
         showButtons: hasInvoice,
-        canReject: true
+        canReject: true,
       };
     case "InvoiceControl":
       return {
         nextStatus: "InvoiceApproved",
         nextStatusLabel: "Invoice Approved",
         showButtons: true,
-        canReject: true
+        canReject: true,
       };
     case "InvoiceApproved":
       return {
         nextStatus: "ApprovedArchived",
         nextStatusLabel: "Approved Archived",
         showButtons: true,
-        canReject: true
+        canReject: true,
       };
     case "ApprovedArchived":
     case "RejectedArchived":
       return {
         showButtons: false,
-        canReject: false
+        canReject: false,
       };
     default:
       return {
         showButtons: false,
-        canReject: false
+        canReject: false,
       };
   }
 };
@@ -1444,7 +1446,9 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
   };
 
   const statusTransition = getStatusTransition(currentStatus, caseData);
-  const currentStatusOption = STATUS_OPTIONS.find(option => option.value === currentStatus);
+  const currentStatusOption = STATUS_OPTIONS.find(
+    (option) => option.value === currentStatus
+  );
 
   return (
     <Paper
@@ -1506,22 +1510,25 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
             label={currentStatusOption?.label || currentStatus}
             color={currentStatusOption?.color || "default"}
             size="medium"
-            sx={{ 
+            sx={{
               mr: 2,
               fontWeight: 600,
               borderRadius: 2,
               px: 1,
-              transition: 'all 0.3s ease-in-out',
-              '& .MuiChip-label': {
-                px: 2
+              transition: "all 0.3s ease-in-out",
+              "& .MuiChip-label": {
+                px: 2,
               },
-              '&:hover': {
-                transform: 'scale(1.02)',
-                boxShadow: (theme) => `0 2px 8px ${theme.palette[currentStatusOption?.color || 'primary'].main}33`
-              }
+              "&:hover": {
+                transform: "scale(1.02)",
+                boxShadow: (theme) =>
+                  `0 2px 8px ${
+                    theme.palette[currentStatusOption?.color || "primary"].main
+                  }33`,
+              },
             }}
           />
-          
+
           {/* Status Transition Buttons */}
           {statusTransition.showButtons && (
             <>
@@ -1531,19 +1538,19 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
                 size="medium"
                 onClick={handleNextStatus}
                 disabled={!statusTransition.nextStatus}
-                sx={{ 
+                sx={{
                   minWidth: 160,
                   borderRadius: 2,
-                  textTransform: 'none',
+                  textTransform: "none",
                   fontWeight: 600,
                   px: 3,
                   py: 1,
-                  boxShadow: '0 2px 8px rgba(46, 125, 50, 0.3)',
-                  '&:hover': {
-                    boxShadow: '0 4px 12px rgba(46, 125, 50, 0.4)',
-                    transform: 'translateY(-1px)',
+                  boxShadow: "0 2px 8px rgba(46, 125, 50, 0.3)",
+                  "&:hover": {
+                    boxShadow: "0 4px 12px rgba(46, 125, 50, 0.4)",
+                    transform: "translateY(-1px)",
                   },
-                  transition: 'all 0.2s ease-in-out'
+                  transition: "all 0.2s ease-in-out",
                 }}
               >
                 Move to {statusTransition.nextStatusLabel}
@@ -1554,20 +1561,20 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
                   color="error"
                   size="medium"
                   onClick={handleReject}
-                  sx={{ 
+                  sx={{
                     minWidth: 120,
                     borderRadius: 2,
-                    textTransform: 'none',
+                    textTransform: "none",
                     fontWeight: 600,
                     px: 3,
                     py: 1,
                     borderWidth: 2,
-                    '&:hover': {
+                    "&:hover": {
                       borderWidth: 2,
-                      backgroundColor: 'rgba(211, 47, 47, 0.04)',
-                      transform: 'translateY(-1px)',
+                      backgroundColor: "rgba(211, 47, 47, 0.04)",
+                      transform: "translateY(-1px)",
                     },
-                    transition: 'all 0.2s ease-in-out'
+                    transition: "all 0.2s ease-in-out",
                   }}
                 >
                   Move to Open
@@ -1823,8 +1830,8 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
       </Box>
 
       {/* Reject Dialog */}
-      <Dialog 
-        open={rejectDialogOpen} 
+      <Dialog
+        open={rejectDialogOpen}
         onClose={handleRejectCancel}
         maxWidth="sm"
         fullWidth
@@ -1852,27 +1859,27 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button 
+          <Button
             onClick={handleRejectCancel}
             variant="outlined"
-            sx={{ 
+            sx={{
               borderRadius: 2,
-              textTransform: 'none',
-              px: 3 
+              textTransform: "none",
+              px: 3,
             }}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleRejectConfirm}
             variant="contained"
             color="error"
             disabled={!rejectComment.trim()}
-            sx={{ 
+            sx={{
               borderRadius: 2,
-              textTransform: 'none',
+              textTransform: "none",
               px: 3,
-              ml: 1
+              ml: 1,
             }}
           >
             Reject to Workshop
