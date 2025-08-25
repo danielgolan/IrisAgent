@@ -20,10 +20,12 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogActions,
+  TextField,
+  Button,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
@@ -39,6 +41,8 @@ import {
   Image as ImageIcon,
   Receipt as InvoiceIcon,
   Tune as CalibrationIcon,
+  ZoomIn as ZoomInIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { getCaseById } from "../sample-data/sampleCases";
 import { STEP_MODULES } from "../steps/stepModules";
@@ -51,20 +55,375 @@ const InfoRow = ({ label, value, highlight = false }) => (
     <Typography
       variant="body2"
       color="text.secondary"
-      sx={{ fontSize: "0.75rem", mb: 0.25, fontWeight: 400 }}
+      sx={{
+        fontSize: "0.75rem",
+        fontWeight: 500,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        mb: 0.25,
+      }}
     >
       {label}
     </Typography>
     <Typography
       variant="body2"
-      fontWeight={highlight ? 600 : 500}
-      color={highlight ? "primary.main" : "#373737"}
-      sx={{ fontSize: "0.825rem", lineHeight: 1.4 }}
+      fontWeight={500}
+      sx={{
+        color: highlight ? "primary.main" : "text.primary",
+        fontSize: "0.875rem",
+      }}
     >
-      {value}
+      {typeof value === "object" && value !== null
+        ? JSON.stringify(value)
+        : value}
     </Typography>
   </Box>
 );
+
+// Image Preview Component for Images Step
+const ImagesStepContent = ({ images = [] }) => {
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  // Create image URL placeholder (in real app, this would be actual image URLs)
+  const getImageUrl = (image) => {
+    // For demo purposes, using placeholder images with better fallbacks
+    const placeholderImages = {
+      VehicleFront: "https://picsum.photos/400/300?random=1",
+      VehicleSide: "https://picsum.photos/400/300?random=2",
+      Injury: "https://picsum.photos/400/300?random=3",
+      AfterRepair: "https://picsum.photos/400/300?random=4",
+      Misc: "https://picsum.photos/400/300?random=5",
+    };
+
+    // Use image ID to make URLs more unique and consistent
+    const imageId = image.id
+      ? image.id.slice(-2)
+      : Math.floor(Math.random() * 100);
+    const fallbackUrl = `https://picsum.photos/400/300?random=${imageId}`;
+
+    return placeholderImages[image.imageType] || fallbackUrl;
+  };
+
+  const isDamageImage = (image) => {
+    return (
+      image.feature === "damage" ||
+      image.checked ||
+      image.imageType === "Injury"
+    );
+  };
+
+  const handleImageClick = (image, event) => {
+    // Prevent event bubbling when clicking on checkbox area
+    if (event.target.closest(".damage-checkbox")) {
+      return;
+    }
+    setSelectedImage(image);
+  };
+
+  const handleDamageToggle = (imageId, event) => {
+    event.stopPropagation();
+    // Here you would update the image's damage status
+    console.log(`Toggle damage status for image ${imageId}`);
+  };
+
+  return (
+    <>
+      <Box sx={{ mt: 1, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
+        {/* Images Grid and Upload Button */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 3,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
+          {/* Images Grid */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            {images.length > 0 ? (
+              <Grid container spacing={2}>
+                {images.map((image, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={image.id || index}>
+                    <Card
+                      sx={{
+                        cursor: "pointer",
+                        position: "relative",
+                        "&:hover": {
+                          transform: "translateY(-2px)",
+                          boxShadow: 4,
+                        },
+                        transition: "all 0.2s ease-in-out",
+                        border: 1,
+                        borderColor: "grey.200",
+                      }}
+                      onClick={(e) => handleImageClick(image, e)}
+                    >
+                      {/* Damage Checkbox - positioned like production */}
+                      <Box
+                        className="damage-checkbox"
+                        sx={{
+                          position: "absolute",
+                          bottom: 8,
+                          left: 8,
+                          zIndex: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          bgcolor: "rgba(255, 255, 255, 0.9)",
+                          borderRadius: 1,
+                          px: 1,
+                          py: 0.5,
+                          backdropFilter: "blur(4px)",
+                        }}
+                      >
+                        <Checkbox
+                          checked={isDamageImage(image)}
+                          onChange={(e) => handleDamageToggle(image.id, e)}
+                          size="small"
+                          sx={{
+                            p: 0,
+                            color: isDamageImage(image)
+                              ? "success.main"
+                              : "grey.400",
+                            "&.Mui-checked": {
+                              color: "success.main",
+                            },
+                          }}
+                        />
+                        <Typography
+                          variant="caption"
+                          fontWeight={500}
+                          sx={{ fontSize: "0.75rem" }}
+                        >
+                          Skade
+                        </Typography>
+                      </Box>
+
+                      {/* Image */}
+                      <Box
+                        sx={{
+                          width: "100%",
+                          height: 180,
+                          position: "relative",
+                          overflow: "hidden",
+                          borderRadius: 1,
+                          backgroundColor: "grey.100",
+                        }}
+                      >
+                        {/* Actual image */}
+                        <Box
+                          component="img"
+                          src={getImageUrl(image)}
+                          alt={image.name}
+                          onError={(e) => {
+                            // Show fallback if image fails to load
+                            e.target.style.display = "none";
+                            const fallback = e.target.nextElementSibling;
+                            if (fallback) fallback.style.display = "flex";
+                          }}
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+
+                        {/* Fallback content - hidden by default */}
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            bgcolor: "grey.100",
+                            display: "none", // Hidden by default, shown only if image fails
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexDirection: "column",
+                          }}
+                        >
+                          <ImageIcon
+                            sx={{ fontSize: "2rem", color: "grey.400", mb: 1 }}
+                          />
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            textAlign="center"
+                            sx={{ px: 1 }}
+                          >
+                            {image.name}
+                          </Typography>
+                        </Box>
+
+                        {/* Hover overlay with zoom icon */}
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            bgcolor: "rgba(0, 0, 0, 0)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "background-color 0.2s ease-in-out",
+                            "&:hover": {
+                              bgcolor: "rgba(0, 0, 0, 0.1)",
+                              "& .zoom-icon": {
+                                opacity: 1,
+                              },
+                            },
+                          }}
+                        >
+                          <ZoomInIcon
+                            className="zoom-icon"
+                            sx={{
+                              color: "white",
+                              fontSize: "1.5rem",
+                              opacity: 0,
+                              transition: "opacity 0.2s ease-in-out",
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 180,
+                  border: 2,
+                  borderStyle: "dashed",
+                  borderColor: "grey.300",
+                  borderRadius: 2,
+                  bgcolor: "grey.50",
+                }}
+              >
+                <ImageIcon
+                  sx={{ fontSize: "3rem", color: "grey.400", mb: 2 }}
+                />
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  fontWeight={500}
+                >
+                  Ingen bilder lastet opp ennå
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Klikk "Legg til bilder" for å laste opp
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* Upload Button - styled like production but with better design */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 180,
+              minWidth: 160,
+              border: 2,
+              borderStyle: "dashed",
+              borderColor: "primary.main",
+              borderRadius: 2,
+              bgcolor: "primary.50",
+              cursor: "pointer",
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                borderColor: "primary.dark",
+                bgcolor: "primary.100",
+                transform: "translateY(-2px)",
+              },
+            }}
+            onClick={() => console.log("Upload images clicked")}
+          >
+            <Avatar
+              sx={{
+                bgcolor: "primary.main",
+                width: 48,
+                height: 48,
+                mb: 2,
+              }}
+            >
+              <ImageIcon fontSize="medium" />
+            </Avatar>
+            <Typography
+              variant="body2"
+              fontWeight={600}
+              color="primary.main"
+              textAlign="center"
+              sx={{ px: 1 }}
+            >
+              LEGG TIL BILDER
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              textAlign="center"
+              sx={{ mt: 0.5, px: 1 }}
+            >
+              Klikk for å laste opp
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Image Detail Dialog */}
+      {selectedImage && (
+        <Dialog
+          open={Boolean(selectedImage)}
+          onClose={() => setSelectedImage(null)}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <ImageIcon />
+              <Typography variant="h6">{selectedImage.name}</Typography>
+              {isDamageImage(selectedImage) && (
+                <Chip label="Skade" size="small" color="success" />
+              )}
+            </Box>
+            <IconButton onClick={() => setSelectedImage(null)}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            <Box
+              sx={{
+                width: "100%",
+                height: "70vh",
+                backgroundImage: `url(${getImageUrl(selectedImage)})`,
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "center",
+                bgcolor: "grey.100",
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+};
 
 // Helper function to get step status based on 4-status model
 const getStepStatus = (stepModule, caseData) => {
@@ -138,6 +497,17 @@ const getStepIcon = (iconName) => {
 
 // Helper function to safely get nested object values
 const getFieldValue = (obj, path) => {
+  if (!path || !obj) return undefined;
+
+  // Special handling for .length properties
+  if (path.endsWith(".length")) {
+    const arrayPath = path.slice(0, -7); // Remove '.length'
+    const array = arrayPath
+      .split(".")
+      .reduce((current, key) => current?.[key], obj);
+    return Array.isArray(array) ? array.length : 0;
+  }
+
   return path.split(".").reduce((current, key) => current?.[key], obj);
 };
 
@@ -791,6 +1161,11 @@ const VerificationSteps = ({
       return renderPartsDetails();
     }
 
+    // Special case for images step - use images preview component
+    if (stepId === "images") {
+      return <ImagesStepContent images={caseData.images} />;
+    }
+
     // Find the step in our verification steps array
     const step = verificationSteps.find((s) => s.id === stepId);
     if (!step) return null;
@@ -959,14 +1334,61 @@ const VerificationSteps = ({
 // Constants for status options
 const STATUS_OPTIONS = [
   { value: "Open", label: "Open", color: "info" },
-  { value: "Pending Approval", label: "Pending Approval", color: "warning" },
-  { value: "ReadyForApproval", label: "Ready for Approval", color: "warning" },
-  { value: "Invoice Flow", label: "Waiting Invoice", color: "info" },
-  { value: "Waiting Payment", label: "Waiting Payment", color: "primary" },
+  { value: "ForApproval", label: "For Approval", color: "warning" },
+  { value: "AwaitingInvoice", label: "Awaiting Invoice", color: "info" },
+  { value: "InvoiceControl", label: "Invoice Control", color: "primary" },
   { value: "InvoiceApproved", label: "Invoice Approved", color: "success" },
-  { value: "Failed", label: "Failed", color: "error" },
-  { value: "Completed", label: "Completed", color: "success" },
+  { value: "ApprovedArchived", label: "Approved Archived", color: "success" },
+  { value: "RejectedArchived", label: "Rejected Archived", color: "error" },
 ];
+
+// Helper function to get next status and determine if buttons should be shown
+const getStatusTransition = (currentStatus, caseData) => {
+  const hasInvoice = caseData.invoice || 
+    (caseData.attachments && caseData.attachments.some(att => att.attachmentType === "Invoice"));
+  
+  switch (currentStatus) {
+    case "ForApproval":
+      return {
+        nextStatus: hasInvoice ? "InvoiceControl" : "AwaitingInvoice",
+        nextStatusLabel: hasInvoice ? "Invoice Control" : "Awaiting Invoice",
+        showButtons: true,
+        canReject: true
+      };
+    case "AwaitingInvoice":
+      return {
+        nextStatus: "InvoiceControl",
+        nextStatusLabel: "Invoice Control",
+        showButtons: hasInvoice,
+        canReject: true
+      };
+    case "InvoiceControl":
+      return {
+        nextStatus: "InvoiceApproved",
+        nextStatusLabel: "Invoice Approved",
+        showButtons: true,
+        canReject: true
+      };
+    case "InvoiceApproved":
+      return {
+        nextStatus: "ApprovedArchived",
+        nextStatusLabel: "Approved Archived",
+        showButtons: true,
+        canReject: true
+      };
+    case "ApprovedArchived":
+    case "RejectedArchived":
+      return {
+        showButtons: false,
+        canReject: false
+      };
+    default:
+      return {
+        showButtons: false,
+        canReject: false
+      };
+  }
+};
 
 // Utility functions
 const formatDate = (dateString) => {
@@ -990,12 +1412,39 @@ const formatDateTime = (dateString) => {
 
 const CaseHeader = ({ caseData, progressPercentage }) => {
   const [currentStatus, setCurrentStatus] = useState(caseData.status);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectComment, setRejectComment] = useState("");
 
-  const handleStatusChange = (event) => {
-    setCurrentStatus(event.target.value);
-    console.log("Status changed to:", event.target.value);
-    // TODO: Update case status in backend
+  const handleNextStatus = () => {
+    const transition = getStatusTransition(currentStatus, caseData);
+    if (transition.nextStatus) {
+      setCurrentStatus(transition.nextStatus);
+      console.log("Status changed to:", transition.nextStatus);
+      // TODO: Update case status in backend
+    }
   };
+
+  const handleReject = () => {
+    setRejectDialogOpen(true);
+  };
+
+  const handleRejectConfirm = () => {
+    if (rejectComment.trim()) {
+      setCurrentStatus("Open");
+      console.log("Status changed to: Open, Comment:", rejectComment);
+      // TODO: Update case status in backend with comment
+      setRejectDialogOpen(false);
+      setRejectComment("");
+    }
+  };
+
+  const handleRejectCancel = () => {
+    setRejectDialogOpen(false);
+    setRejectComment("");
+  };
+
+  const statusTransition = getStatusTransition(currentStatus, caseData);
+  const currentStatusOption = STATUS_OPTIONS.find(option => option.value === currentStatus);
 
   return (
     <Paper
@@ -1049,26 +1498,83 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
             pr: 2.5, // Add padding back for content
           }}
         >
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={currentStatus}
-              label="Status"
-              onChange={handleStatusChange}
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <StatusChip
-                      label={option.label}
-                      status={option.label}
-                      size="small"
-                    />
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Current Status Display */}
+          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+            Status:
+          </Typography>
+          <Chip
+            label={currentStatusOption?.label || currentStatus}
+            color={currentStatusOption?.color || "default"}
+            size="medium"
+            sx={{ 
+              mr: 2,
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 1,
+              transition: 'all 0.3s ease-in-out',
+              '& .MuiChip-label': {
+                px: 2
+              },
+              '&:hover': {
+                transform: 'scale(1.02)',
+                boxShadow: (theme) => `0 2px 8px ${theme.palette[currentStatusOption?.color || 'primary'].main}33`
+              }
+            }}
+          />
+          
+          {/* Status Transition Buttons */}
+          {statusTransition.showButtons && (
+            <>
+              <Button
+                variant="contained"
+                color="success"
+                size="medium"
+                onClick={handleNextStatus}
+                disabled={!statusTransition.nextStatus}
+                sx={{ 
+                  minWidth: 160,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1,
+                  boxShadow: '0 2px 8px rgba(46, 125, 50, 0.3)',
+                  '&:hover': {
+                    boxShadow: '0 4px 12px rgba(46, 125, 50, 0.4)',
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                Move to {statusTransition.nextStatusLabel}
+              </Button>
+              {statusTransition.canReject && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="medium"
+                  onClick={handleReject}
+                  sx={{ 
+                    minWidth: 120,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    borderWidth: 2,
+                    '&:hover': {
+                      borderWidth: 2,
+                      backgroundColor: 'rgba(211, 47, 47, 0.04)',
+                      transform: 'translateY(-1px)',
+                    },
+                    transition: 'all 0.2s ease-in-out'
+                  }}
+                >
+                  Move to Open
+                </Button>
+              )}
+            </>
+          )}
         </Box>
       </Box>
 
@@ -1315,6 +1821,64 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
           color={progressPercentage === 100 ? "success" : "primary"}
         />
       </Box>
+
+      {/* Reject Dialog */}
+      <Dialog 
+        open={rejectDialogOpen} 
+        onClose={handleRejectCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography variant="h6" component="div">
+            Reject Case to Workshop
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Please provide a reason for rejecting this case back to the workshop
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <TextField
+            autoFocus
+            multiline
+            rows={4}
+            fullWidth
+            label="Rejection Reason"
+            placeholder="Describe what needs to be fixed or improved..."
+            value={rejectComment}
+            onChange={(e) => setRejectComment(e.target.value)}
+            variant="outlined"
+            sx={{ mb: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button 
+            onClick={handleRejectCancel}
+            variant="outlined"
+            sx={{ 
+              borderRadius: 2,
+              textTransform: 'none',
+              px: 3 
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleRejectConfirm}
+            variant="contained"
+            color="error"
+            disabled={!rejectComment.trim()}
+            sx={{ 
+              borderRadius: 2,
+              textTransform: 'none',
+              px: 3,
+              ml: 1
+            }}
+          >
+            Reject to Workshop
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
