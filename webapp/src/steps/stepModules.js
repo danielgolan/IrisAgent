@@ -416,21 +416,14 @@ export const STEP_MODULES = {
     },
   },
 
-  // Step 7: Calibration (Kalibrering) - Only for windshield replacement
+  // Step 7: Calibration (Kalibrering)
   calibration: {
     id: "calibration",
     name: "Kalibrering",
     nameEn: "Calibration",
-    description:
-      "ADAS calibration requirements and confirmation for windshield replacement",
+    description: "ADAS calibration requirements and confirmation",
     icon: "Settings",
     order: 7,
-
-    // Conditional display - only show for windshield work
-    conditionalDisplay: {
-      condition: (caseData) => caseData.jobType === "Replace",
-      description: "Only visible for windshield replacement jobs",
-    },
 
     // Data field mappings to case data
     dataFields: {
@@ -489,7 +482,6 @@ export const STEP_MODULES = {
     name: "Faktura",
     nameEn: "Invoice",
     description: "Invoice upload and automated API validation",
-    icon: "Receipt",
     order: 8,
 
     // Data field mappings to case data

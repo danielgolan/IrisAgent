@@ -228,6 +228,12 @@ export const sampleCases = [
       totalSum: 750,
       insuranceVAT: 150,
       customerVAT: 0,
+      priceComparison: {
+        minimum: 10839.4,
+        maximum: 17112.0,
+        average: 12668.68,
+        count: 45,
+      },
     },
     claimId: "e5f05c3b-68bd-40de-ab87-b9e1a2ada085",
 

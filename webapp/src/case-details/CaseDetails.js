@@ -10,10 +10,8 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Divider,
   IconButton,
   Avatar,
-  LinearProgress,
   Checkbox,
   FormControlLabel,
   List,
@@ -43,11 +41,14 @@ import {
   Tune as CalibrationIcon,
   ZoomIn as ZoomInIcon,
   Close as CloseIcon,
+  Warning as WarningIcon,
+  ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
 import { getCaseById } from "../sample-data/sampleCases";
 import { STEP_MODULES } from "../steps/stepModules";
 import ActivityLog from "../components/ActivityLog";
 import StatusChip from "../components/StatusChip";
+import InvoiceStepContent from "../components/InvoiceStepContent";
 
 // Helper component for information rows
 const InfoRow = ({ label, value, highlight = false }) => (
@@ -468,7 +469,51 @@ const getStepStatus = (stepModule, caseData) => {
     }
   }
 
-  // Default to pending if no logic matches
+  // Enhanced default logic - try to determine status based on available data
+  if (stepModule.dataFields && caseData) {
+    let hasRequiredData = false;
+    let hasSomeData = false;
+
+    // Check if step has meaningful data
+    Object.entries(stepModule.dataFields).forEach(([fieldName, dataPath]) => {
+      const value = getNestedValue(caseData, dataPath);
+      if (
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        value !== 0
+      ) {
+        hasSomeData = true;
+        // Consider certain fields as "required" indicators
+        if (
+          fieldName.includes("Status") ||
+          fieldName.includes("Date") ||
+          fieldName.includes("Type")
+        ) {
+          hasRequiredData = true;
+        }
+      }
+    });
+
+    // If step has good data, auto-approve it. If partial data, auto-warning.
+    if (hasRequiredData) {
+      return {
+        status: "auto-approved",
+        isReadOnly: true,
+        statusChip: "success",
+        label: "Auto-approved",
+      };
+    } else if (hasSomeData) {
+      return {
+        status: "auto-warning",
+        isReadOnly: false,
+        statusChip: "warning",
+        label: "Needs Review",
+      };
+    }
+  }
+
+  // Default to pending if no logic matches and no meaningful data
   return {
     status: "pending",
     isReadOnly: false,
@@ -477,8 +522,16 @@ const getStepStatus = (stepModule, caseData) => {
   };
 };
 
+// Helper function to get nested value (add if not already present)
+const getNestedValue = (obj, path) => {
+  if (!path || !obj) return undefined;
+  return path.split(".").reduce((current, key) => current?.[key], obj);
+};
+
 // Helper function to get step icon
 const getStepIcon = (iconName) => {
+  if (!iconName) return null; // Return null if no icon specified
+
   const iconMap = {
     Security: InsuranceIcon,
     Build: RepairIcon,
@@ -586,7 +639,11 @@ const CaseDetails = () => {
         pb: { xs: 2, sm: 3, md: 4 },
       }}
     >
-      <CaseHeader caseData={caseData} progressPercentage={progressPercentage} />
+      <CaseHeader
+        caseData={caseData}
+        progressPercentage={progressPercentage}
+        checkedSteps={checkedSteps}
+      />
 
       {/* Verification Steps Section with Expandable Details */}
       <VerificationSteps
@@ -873,227 +930,325 @@ const VerificationSteps = ({
         ))}
       </Box>
 
-      {/* Enhanced Summary Section with Norwegian calculations */}
+      {/* Clean Two-Column Price Comparison */}
       <Box
-        sx={{ bgcolor: "#f8fafc", borderTop: 1, borderColor: "grey.200", p: 3 }}
+        sx={{ bgcolor: "#ffffff", borderTop: 1, borderColor: "grey.200", p: 3 }}
       >
-        <Box sx={{ display: "flex", gap: 4, justifyContent: "space-between" }}>
-          {/* Left Column: Price Comparison (Informational) */}
-          {caseData.approvedTotals?.priceComparison && (
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="h6"
-                fontWeight={600}
-                gutterBottom
-                sx={{ mb: 2, color: "text.secondary" }}
-              >
-                Total Pris (Markedsinfo)
-              </Typography>
-
-              {/* Minimum */}
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Minimum:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight={500}
-                  color="text.secondary"
-                >
-                  {caseData.approvedTotals.priceComparison.minimum?.toLocaleString()}{" "}
-                  NOK
-                </Typography>
-              </Box>
-
-              {/* Maximum */}
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Maksimum:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight={500}
-                  color="text.secondary"
-                >
-                  {caseData.approvedTotals.priceComparison.maximum?.toLocaleString()}{" "}
-                  NOK
-                </Typography>
-              </Box>
-
-              {/* Count */}
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Antall:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight={500}
-                  color="text.secondary"
-                >
-                  {caseData.approvedTotals.priceComparison.count}
-                </Typography>
-              </Box>
-
-              {/* Average */}
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Gjennomsnitt:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  fontWeight={500}
-                  color="text.secondary"
-                >
-                  {caseData.approvedTotals.priceComparison.average?.toLocaleString()}{" "}
-                  NOK
-                </Typography>
-              </Box>
-            </Box>
-          )}
-
-          {/* Right Column: Calculation Breakdown (Agent Focus) */}
+        <Box sx={{ display: "flex", gap: 6 }}>
+          {/* Left Column: Market Price Information */}
           <Box sx={{ flex: 1 }}>
             <Typography
               variant="h6"
-              fontWeight={600}
-              gutterBottom
-              sx={{ mb: 2, color: "primary.main" }}
+              fontWeight={700}
+              sx={{ mb: 3, color: "#d32f2f", fontSize: "1.1rem" }}
             >
-              Calculation Breakdown
+              Markedspris
             </Typography>
 
-            {/* Sum */}
             <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              sx={{
+                bgcolor: "#fafafa",
+                borderRadius: 2,
+                p: 2.5,
+                border: "1px solid #e0e0e0",
+              }}
             >
-              <Typography variant="body2" fontWeight={500}>
-                Sum:
-              </Typography>
-              <Typography variant="body2" fontWeight={600}>
-                {caseData.orderLines
-                  ?.reduce((sum, orderLine) => sum + (orderLine.total || 0), 0)
-                  .toLocaleString()}{" "}
-                NOK
-              </Typography>
-            </Box>
+              {/* Supporting data - smaller and less prominent */}
+              <Box sx={{ mb: 2, opacity: 0.7 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 0.5,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    Minimum:
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+                  >
+                    {(
+                      caseData.approvedTotals?.priceComparison?.minimum ||
+                      10839.4
+                    )?.toLocaleString()}{" "}
+                    NOK
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 0.5,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    Maksimum:
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+                  >
+                    {(
+                      caseData.approvedTotals?.priceComparison?.maximum ||
+                      17112.0
+                    )?.toLocaleString()}{" "}
+                    NOK
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 1.5,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    Antall tilfeller:
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+                  >
+                    {caseData.approvedTotals?.priceComparison?.count || 45}
+                  </Typography>
+                </Box>
+              </Box>
 
-            {/* MVA-pliktig kunde (VAT liable customer) */}
-            {caseData.requiresVAT && (
+              {/* Key metric - prominent */}
               <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+                sx={{
+                  bgcolor: "#fff",
+                  borderRadius: 1.5,
+                  p: 2,
+                  border: "2px solid #d32f2f",
+                  boxShadow: "0 2px 8px rgba(211, 47, 47, 0.1)",
+                }}
               >
-                <Typography variant="body2" fontWeight={500}>
-                  MVA-pliktig kunde:
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#d32f2f",
+                    fontWeight: 600,
+                    textAlign: "center",
+                    fontSize: "0.9rem",
+                    mb: 0.5,
+                  }}
+                >
+                  Gjennomsnitt
                 </Typography>
-                <Typography variant="body2" fontWeight={600} color="error.main">
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: "#d32f2f",
+                    fontWeight: 700,
+                    textAlign: "center",
+                    fontSize: "1.5rem",
+                  }}
+                >
                   {(
-                    caseData.orderLines?.reduce(
-                      (sum, orderLine) => sum + (orderLine.total || 0),
+                    caseData.approvedTotals?.priceComparison?.average ||
+                    12668.68
+                  )?.toLocaleString()}{" "}
+                  NOK
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Right Column: Case Calculation */}
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="h6"
+              fontWeight={700}
+              sx={{ mb: 3, color: "#1976d2", fontSize: "1.1rem" }}
+            >
+              Denne saken
+            </Typography>
+
+            <Box
+              sx={{
+                bgcolor: "#fafafa",
+                borderRadius: 2,
+                p: 2.5,
+                border: "1px solid #e0e0e0",
+              }}
+            >
+              {/* Calculation steps - smaller and less prominent */}
+              <Box sx={{ mb: 2, opacity: 0.7 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 0.5,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    Sum deler/arbeid:
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+                  >
+                    {caseData.orderLines
+                      ?.reduce(
+                        (sum, orderLine) => sum + (orderLine.total || 0),
+                        0
+                      )
+                      .toLocaleString()}{" "}
+                    NOK
+                  </Typography>
+                </Box>
+
+                {(caseData.requiresVAT ||
+                  caseData.approvedTotals?.totalVAT > 0) && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 0.5,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                      MVA (25%):
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.875rem", fontWeight: 500 }}
+                    >
+                      +
+                      {(
+                        caseData.approvedTotals?.totalVAT || 0
+                      ).toLocaleString()}{" "}
+                      NOK
+                    </Typography>
+                  </Box>
+                )}
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 1.5,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                    Egenandel:
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      color: "#ed6c02",
+                    }}
+                  >
+                    -
+                    {(
+                      caseData.approvedTotals?.deductible ||
+                      caseData.caseDeductible ||
                       0
-                    ) * 0.25
+                    ).toLocaleString()}{" "}
+                    NOK
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Key result - prominent for comparison */}
+              <Box
+                sx={{
+                  bgcolor: "#fff",
+                  borderRadius: 1.5,
+                  p: 2,
+                  border: "2px solid #2e7d32",
+                  boxShadow: "0 2px 8px rgba(46, 125, 50, 0.1)",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "#2e7d32",
+                    fontWeight: 600,
+                    textAlign: "center",
+                    fontSize: "0.9rem",
+                    mb: 0.5,
+                  }}
+                >
+                  Til forsikring
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: "#2e7d32",
+                    fontWeight: 700,
+                    textAlign: "center",
+                    fontSize: "1.5rem",
+                  }}
+                >
+                  {(
+                    caseData.approvedTotals?.amountToInsurance ||
+                    Math.max(
+                      0,
+                      (caseData.approvedTotals?.totalSum ||
+                        caseData.orderLines?.reduce(
+                          (sum, orderLine) => sum + (orderLine.total || 0),
+                          0
+                        ) * (caseData.requiresVAT ? 1.25 : 1)) -
+                        (caseData.approvedTotals?.deductible ||
+                          caseData.caseDeductible ||
+                          0)
+                    )
                   ).toLocaleString()}{" "}
                   NOK
                 </Typography>
               </Box>
-            )}
-
-            {/* Egenandel (Deductible) - Always show for this case */}
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-            >
-              <Typography variant="body2" fontWeight={500}>
-                Egenandel:
-              </Typography>
-              <Typography variant="body2" fontWeight={600} color="warning.main">
-                -
-                {(
-                  caseData.approvedTotals?.deductible || 3000
-                )?.toLocaleString()}{" "}
-                NOK
-              </Typography>
-            </Box>
-
-            {/* Til forsikring (To insurance) */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                mb: 1,
-                pt: 1,
-                borderTop: 1,
-                borderColor: "divider",
-              }}
-            >
-              <Typography variant="body1" fontWeight={600}>
-                Til forsikring:
-              </Typography>
-              <Typography variant="body1" fontWeight={700} color="success.main">
-                {(
-                  caseData.approvedTotals?.amountToInsurance ||
-                  (caseData.orderLines?.reduce(
-                    (sum, orderLine) => sum + (orderLine.total || 0),
-                    0
-                  ) || 0) - 3000
-                )?.toLocaleString()}{" "}
-                NOK
-              </Typography>
             </Box>
           </Box>
-        </Box>
-
-        {/* Total with border */}
-        <Divider sx={{ my: 2 }} />
-        <Box sx={{ textAlign: "center" }}>
-          <Typography variant="h5" fontWeight={700} color="primary.main">
-            Total:{" "}
-            {(
-              caseData.orderLines?.reduce(
-                (sum, orderLine) => sum + (orderLine.total || 0),
-                0
-              ) * (caseData.requiresVAT ? 1.25 : 1)
-            ).toLocaleString()}{" "}
-            NOK
-          </Typography>
-
-          {/* Note about price guidance */}
-          {caseData.approvedTotals?.priceComparison && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 1, display: "block" }}
-            >
-              IRIS gjør det nå lettere å velge riktig rute med autosøk på OEM og
-              Eurokode. Det kan også søkes på en del leverandørkoder. Dersom et
-              rutenummer ikke finnes, kan det manuelt legges inn.
-            </Typography>
-          )}
         </Box>
       </Box>
 
       {/* Status alerts */}
-      {caseData.orderLines?.some(
-        (orderLine) => !orderLine.priceAgreementResponse?.isSuccessfull
-      ) && (
-        <Alert severity="warning" sx={{ m: 2, mb: 0 }}>
-          Some items require approval before proceeding
-        </Alert>
-      )}
     </Box>
   );
+
+  // Helper function to get API service messages for specific steps
+  const getApiMessage = (stepId) => {
+    const apiMessages = {
+      coverage: {
+        type: "warning",
+        message: "Policy started 1 week ago - check for fraud",
+        service: "FraudCheck API",
+      },
+      vehicle: {
+        type: "info",
+        message: "VIN verified via DMV database - no theft records found",
+        service: "DMV API",
+      },
+      damage_assessment: {
+        type: "warning",
+        message:
+          "AI analysis detected potential pre-existing damage in rear bumper",
+        service: "DamageAI API",
+      },
+      parts_labor: {
+        type: "info",
+        message: "All parts available - estimated delivery 3-5 business days",
+        service: "SupplierNet API",
+      },
+    };
+
+    return apiMessages[stepId] || null;
+  };
 
   // Generic function to render step content based on step module configuration
   const renderStepContent = (step) => {
     const { stepModule } = step;
     const dataFields = stepModule.dataFields || {};
     const fieldLabels = stepModule.fieldLabels || {};
+
+    // Get API message if available for this step
+    const apiMessage = getApiMessage(stepModule.id);
 
     // Get field values from case data
     const fieldValues = Object.entries(dataFields).map(
@@ -1113,6 +1268,16 @@ const VerificationSteps = ({
 
     return (
       <Box sx={{ mt: 1, p: 3, bgcolor: "grey.50", borderRadius: 2 }}>
+        {/* API Service Message */}
+        {apiMessage && (
+          <Alert
+            severity={apiMessage.type === "warning" ? "warning" : "info"}
+            sx={{ mb: 2, fontSize: "0.875rem", borderRadius: 2 }}
+          >
+            <strong>{apiMessage.service}:</strong> {apiMessage.message}
+          </Alert>
+        )}
+
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={3}>
             {column1.map((field) => (
@@ -1164,6 +1329,14 @@ const VerificationSteps = ({
     // Special case for images step - use images preview component
     if (stepId === "images") {
       return <ImagesStepContent images={caseData.images} />;
+    }
+
+    // Special case for invoice step - use custom invoice component
+    if (stepId === "invoice") {
+      const isStepChecked = checkedSteps.has(stepId);
+      return (
+        <InvoiceStepContent caseData={caseData} isApproved={isStepChecked} />
+      );
     }
 
     // Find the step in our verification steps array
@@ -1223,7 +1396,8 @@ const VerificationSteps = ({
                         height: 40,
                       }}
                     >
-                      {React.cloneElement(step.icon, { fontSize: "medium" })}
+                      {step.icon &&
+                        React.cloneElement(step.icon, { fontSize: "medium" })}
                     </Avatar>
                   </ListItemIcon>
 
@@ -1235,9 +1409,25 @@ const VerificationSteps = ({
                         <Typography
                           variant="h6"
                           fontWeight={600}
-                          sx={{ fontSize: "1.1rem" }}
+                          sx={{
+                            fontSize: "1.1rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
                         >
                           {step.title}
+                          {getApiMessage(step.stepModule.id)?.type ===
+                            "warning" &&
+                            !isChecked && (
+                              <WarningIcon
+                                sx={{
+                                  fontSize: "1rem",
+                                  color: "warning.main",
+                                  opacity: 0.8,
+                                }}
+                              />
+                            )}
                         </Typography>
                         <StatusChip
                           label={step.chipLabel}
@@ -1353,28 +1543,30 @@ const getStatusTransition = (currentStatus, caseData) => {
     case "ForApproval":
       return {
         nextStatus: hasInvoice ? "InvoiceControl" : "AwaitingInvoice",
-        nextStatusLabel: hasInvoice ? "Invoice Control" : "Awaiting Invoice",
+        nextStatusLabel: hasInvoice
+          ? "Move to Invoice Control"
+          : "Move to Awaiting Invoice",
         showButtons: true,
         canReject: true,
       };
     case "AwaitingInvoice":
       return {
         nextStatus: "InvoiceControl",
-        nextStatusLabel: "Invoice Control",
+        nextStatusLabel: "Move to Invoice Control",
         showButtons: hasInvoice,
         canReject: true,
       };
     case "InvoiceControl":
       return {
         nextStatus: "InvoiceApproved",
-        nextStatusLabel: "Invoice Approved",
+        nextStatusLabel: "Move to Invoice Approved",
         showButtons: true,
         canReject: true,
       };
     case "InvoiceApproved":
       return {
         nextStatus: "ApprovedArchived",
-        nextStatusLabel: "Approved Archived",
+        nextStatusLabel: "Move to Approved Archived",
         showButtons: true,
         canReject: true,
       };
@@ -1412,10 +1604,55 @@ const formatDateTime = (dateString) => {
   return `${dateStr} ${timeStr}`;
 };
 
-const CaseHeader = ({ caseData, progressPercentage }) => {
+const CaseHeader = ({ caseData, progressPercentage, checkedSteps }) => {
   const [currentStatus, setCurrentStatus] = useState(caseData.status);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectComment, setRejectComment] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState("");
+
+  // Helper function to copy text to clipboard and show feedback
+  const handleCopyToClipboard = async (text, fieldName) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyFeedback(`Copied ${fieldName}!`);
+      setTimeout(() => setCopyFeedback(""), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+      setCopyFeedback("Copy failed");
+      setTimeout(() => setCopyFeedback(""), 2000);
+    }
+  };
+
+  // Helper function to get step status considering both case data and checkedSteps state
+  const getStepStatusWithOverride = (stepModule, caseData, checkedSteps) => {
+    // First check if user has manually toggled this step
+    if (checkedSteps.has(stepModule.id)) {
+      return {
+        status: "approved",
+        isReadOnly: true,
+        statusChip: "success",
+        label: "Approved",
+      };
+    }
+
+    // Check if step would normally be auto-approved but user unchecked it
+    const originalStatus = getStepStatus(stepModule, caseData);
+    if (
+      (originalStatus.status === "auto-approved" ||
+        originalStatus.status === "approved") &&
+      !checkedSteps.has(stepModule.id)
+    ) {
+      return {
+        status: "declined",
+        isReadOnly: false,
+        statusChip: "warning",
+        label: "Declined",
+      };
+    }
+
+    // Otherwise use the original status logic
+    return originalStatus;
+  };
 
   const handleNextStatus = () => {
     const transition = getStatusTransition(currentStatus, caseData);
@@ -1446,387 +1683,434 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
   };
 
   const statusTransition = getStatusTransition(currentStatus, caseData);
-  const currentStatusOption = STATUS_OPTIONS.find(
-    (option) => option.value === currentStatus
+
+  // Clickable field component for copying values
+  const ClickableField = ({ label, value, fieldName }) => (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          fontSize: "0.7rem",
+          fontWeight: 500,
+          textTransform: "uppercase",
+          letterSpacing: "0.5px",
+          color: "text.secondary",
+          display: "block",
+          mb: 0.25,
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        onClick={() => handleCopyToClipboard(value, fieldName)}
+        sx={{
+          fontWeight: 500,
+          fontSize: "0.8rem",
+          color: "text.primary", // Same color for all fields
+          lineHeight: 1.2,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          cursor: "pointer",
+          borderRadius: 1,
+          transition: "all 0.2s ease",
+          // Remove any padding/margin that might cause alignment issues
+          padding: 0,
+          margin: 0,
+          "&:hover": {
+            backgroundColor: "rgba(25, 118, 210, 0.04)",
+            color: "primary.main",
+            fontWeight: 600,
+          },
+        }}
+        title={`Click to copy: ${value}`}
+      >
+        {value}
+      </Typography>
+    </Box>
   );
 
   return (
     <Paper
-      elevation={3}
+      elevation={1}
       sx={{
-        p: 1, // Reduced padding from 2 to 1
-        mb: 1, // Reduced margin bottom from 2 to 1
+        p: 0,
+        mb: 2,
         position: "sticky",
         top: 0,
         zIndex: 1000,
         backgroundColor: "background.paper",
         borderBottom: "1px solid",
         borderBottomColor: "divider",
+        borderRadius: 2,
+        overflow: "hidden",
       }}
     >
-      {/* Top Row: Case Title and Status */}
+      {/* A. Main Header Row */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 1.5,
-          width: "100%",
+          p: 3,
+          pb: 2,
+          borderBottom: "1px solid",
+          borderBottomColor: "divider",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Avatar
-            sx={{ bgcolor: "primary.main", mr: 1.5, width: 36, height: 36 }}
-          >
-            <CarIcon fontSize="small" />
-          </Avatar>
-          <Box>
-            <Typography variant="h5" component="h1">
-              Case #{caseData.caseNumber}
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              {caseData.vehicle?.brandName} {caseData.vehicle?.model} (
-              {caseData.vehicle?.firstRegistered
-                ? new Date(caseData.vehicle.firstRegistered).getFullYear()
-                : "N/A"}
-              )
-            </Typography>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            alignItems: "center",
-            mr: -2.5, // Negative margin to offset Paper padding
-            pr: 2.5, // Add padding back for content
-          }}
-        >
-          {/* Current Status Display */}
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-            Status:
-          </Typography>
-          <Chip
-            label={currentStatusOption?.label || currentStatus}
-            color={currentStatusOption?.color || "default"}
-            size="medium"
+        {/* Left: Back Button + Case ID + Status */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<ArrowBackIcon />}
             sx={{
-              mr: 2,
-              fontWeight: 600,
+              backgroundColor: "primary.main",
+              color: "white",
               borderRadius: 2,
-              px: 1,
-              transition: "all 0.3s ease-in-out",
-              "& .MuiChip-label": {
-                px: 2,
-              },
+              textTransform: "none",
+              fontWeight: 600,
+              px: 3,
+              py: 1.25,
               "&:hover": {
-                transform: "scale(1.02)",
-                boxShadow: (theme) =>
-                  `0 2px 8px ${
-                    theme.palette[currentStatusOption?.color || "primary"].main
-                  }33`,
+                backgroundColor: "primary.dark",
               },
             }}
-          />
+            onClick={() => window.history.back()}
+          >
+            Back
+          </Button>
 
-          {/* Status Transition Buttons */}
+          <Box>
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{
+                fontWeight: 700,
+                color: "text.primary",
+                mb: 0.5,
+                fontSize: { xs: "1.5rem", md: "2rem" },
+              }}
+            >
+              {caseData.caseNumber}
+            </Typography>
+            <StatusChip
+              label={statusTransition.currentStatusLabel || currentStatus}
+              status={currentStatus}
+              sx={{
+                fontSize: "0.75rem",
+                height: 24,
+                "& .MuiChip-label": {
+                  px: 1.5,
+                  py: 0.25,
+                },
+              }}
+            />
+          </Box>
+        </Box>
+
+        {/* Right: Action Buttons */}
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           {statusTransition.showButtons && (
             <>
-              <Button
-                variant="contained"
-                color="success"
-                size="medium"
-                onClick={handleNextStatus}
-                disabled={!statusTransition.nextStatus}
-                sx={{
-                  minWidth: 160,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1,
-                  boxShadow: "0 2px 8px rgba(46, 125, 50, 0.3)",
-                  "&:hover": {
-                    boxShadow: "0 4px 12px rgba(46, 125, 50, 0.4)",
-                    transform: "translateY(-1px)",
-                  },
-                  transition: "all 0.2s ease-in-out",
-                }}
-              >
-                Move to {statusTransition.nextStatusLabel}
-              </Button>
               {statusTransition.canReject && (
                 <Button
                   variant="outlined"
                   color="error"
-                  size="medium"
+                  size="large"
                   onClick={handleReject}
                   sx={{
-                    minWidth: 120,
+                    minWidth: 140,
                     borderRadius: 2,
                     textTransform: "none",
                     fontWeight: 600,
-                    px: 3,
-                    py: 1,
+                    px: 4,
+                    py: 1.5,
+                    fontSize: "1rem",
                     borderWidth: 2,
                     "&:hover": {
                       borderWidth: 2,
-                      backgroundColor: "rgba(211, 47, 47, 0.04)",
-                      transform: "translateY(-1px)",
                     },
-                    transition: "all 0.2s ease-in-out",
                   }}
                 >
                   Move to Open
                 </Button>
               )}
+              <Button
+                variant="contained"
+                color="success"
+                size="large"
+                onClick={handleNextStatus}
+                disabled={!statusTransition.nextStatus}
+                sx={{
+                  minWidth: 180,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                  fontSize: "1rem",
+                }}
+              >
+                {statusTransition.nextStatusLabel}
+              </Button>
             </>
           )}
         </Box>
       </Box>
 
-      {/* Single Row: Case Information */}
+      {/* B. Metadata Block - Compacted */}
       <Box
         sx={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: { xs: 1, sm: 2 },
-          width: "100%",
-          py: 1,
+          px: 3,
+          py: 1.5,
+          backgroundColor: "grey.50",
+          borderBottom: "1px solid",
+          borderBottomColor: "divider",
+          position: "relative",
         }}
       >
-        <Box sx={{ flex: 1 }}>
-          {/* Headers Row */}
+        {/* Copy Feedback */}
+        {copyFeedback && (
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-              mb: 0.5,
+              position: "absolute",
+              top: 8,
+              right: 16,
+              backgroundColor: "success.main",
+              color: "white",
+              px: 2,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              zIndex: 1,
+              animation: "fadeIn 0.3s ease-in-out",
+              "@keyframes fadeIn": {
+                "0%": { opacity: 0, transform: "translateY(-4px)" },
+                "100%": { opacity: 1, transform: "translateY(0)" },
+              },
             }}
           >
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 12%",
-                textAlign: "center",
-              }}
-            >
-              VRN
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 14%",
-                textAlign: "center",
-              }}
-            >
-              Incident Date
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 10%",
-                textAlign: "center",
-              }}
-            >
-              Job Type
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 12%",
-                textAlign: "center",
-              }}
-            >
-              Coverage
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 14%",
-                textAlign: "center",
-              }}
-            >
-              Deductible
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 8%",
-                textAlign: "center",
-              }}
-            >
-              VAT
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 15%",
-                textAlign: "center",
-              }}
-            >
-              Workshop
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 500,
-                flex: "0 0 15%",
-                textAlign: "center",
-              }}
-            >
-              Last Updated
-            </Typography>
+            {copyFeedback}
           </Box>
+        )}
 
-          {/* Values Row */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-            }}
-          >
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 12%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.vehicle?.vehicleLicenseNumber || "N/A"}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 14%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.dateOfIncident
-                ? new Date(caseData.dateOfIncident).toLocaleDateString()
-                : "N/A"}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 10%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.jobType || "N/A"}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 12%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.insuranceInformation?.coverage?.hasGlassCoverage
+        {/* All metadata in a single compact grid */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "repeat(2, 1fr)",
+              sm: "repeat(4, 1fr)",
+              md: "repeat(6, 1fr)",
+              lg: "repeat(8, 1fr)",
+            },
+            gap: { xs: 1.5, md: 2 },
+            "& > div": {
+              minWidth: 0, // Prevent grid overflow
+            },
+          }}
+        >
+          <ClickableField
+            label="Vehicle"
+            value={`${caseData.vehicle?.brandName || "N/A"} ${
+              caseData.vehicle?.model || ""
+            } (${
+              caseData.vehicle?.firstRegistered
+                ? new Date(caseData.vehicle.firstRegistered).getFullYear()
+                : "N/A"
+            })`}
+            fieldName="Vehicle"
+          />
+
+          <ClickableField
+            label="VRN"
+            value={caseData.vehicle?.vehicleLicenseNumber || "N/A"}
+            fieldName="VRN"
+          />
+
+          <ClickableField
+            label="Job Type"
+            value={caseData.jobType || "N/A"}
+            fieldName="Job Type"
+          />
+
+          <ClickableField
+            label="Coverage"
+            value={
+              caseData.insuranceInformation?.coverage?.hasGlassCoverage
                 ? "Covered"
-                : "Not Covered"}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 14%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.insuranceInformation?.coverage?.deductible
+                : "Not Covered"
+            }
+            fieldName="Coverage"
+          />
+
+          <ClickableField
+            label="Deductible"
+            value={
+              caseData.insuranceInformation?.coverage?.deductible
                 ? `${caseData.insuranceInformation.coverage.deductible} ${
                     caseData.insuranceInformation.coverage.deductibleCurrency ||
                     "NOK"
                   }`
-                : "N/A"}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 8%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.requiresVAT ? "Yes" : "No"}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 15%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.workshop?.name || "N/A"}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                flex: "0 0 15%",
-                textAlign: "center",
-              }}
-            >
-              {caseData.lastModified
-                ? formatDateTime(caseData.lastModified)
-                : caseData.registrationDate
-                ? formatDateTime(caseData.registrationDate)
-                : "N/A"}{" "}
-              by {caseData.caseWorker?.name || "System"}
-            </Typography>
-          </Box>
+                : "N/A"
+            }
+            fieldName="Deductible"
+          />
+
+          <ClickableField
+            label="VAT"
+            value={caseData.requiresVAT ? "Yes" : "No"}
+            fieldName="VAT"
+          />
+
+          <ClickableField
+            label="Workshop"
+            value={caseData.workshop?.name || "N/A"}
+            fieldName="Workshop"
+          />
+
+          <ClickableField
+            label="Created"
+            value={
+              caseData.dateOfIncident
+                ? new Date(caseData.dateOfIncident).toLocaleDateString(
+                    "nb-NO",
+                    {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    }
+                  )
+                : new Date().toLocaleDateString("nb-NO", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+            }
+            fieldName="Created Date"
+          />
         </Box>
       </Box>
 
-      {/* Progress Bar at Bottom */}
-      <Box sx={{ mt: 2, mb: 0 }}>
-        <LinearProgress
-          variant="determinate"
-          value={progressPercentage}
-          sx={{ height: 8, borderRadius: 4, width: "100%" }}
-          color={progressPercentage === 100 ? "success" : "primary"}
-        />
+      {/* C. Quick Access Buttons Row - Compacted */}
+      <Box
+        sx={{
+          display: "flex",
+          gap: 0.75,
+          px: 3,
+          py: 1.25,
+          flexWrap: "wrap",
+          justifyContent: "flex-start",
+        }}
+      >
+        {/* Quick Access Navigation Buttons */}
+        {[
+          {
+            label: "Policy Holder",
+            icon: <PersonIcon />,
+            stepId: "policy_holder",
+          },
+          { label: "Vehicle & Owner", icon: <CarIcon />, stepId: "vehicle" },
+          { label: "Coverage", icon: <InsuranceIcon />, stepId: "coverage" },
+          {
+            label: "Images/Attachments",
+            icon: <ImageIcon />,
+            stepId: "images",
+          },
+          {
+            label: "Damage Report",
+            icon: <ReportIcon />,
+            stepId: "damage_report",
+          },
+          {
+            label: "Parts & Labor",
+            icon: <RepairIcon />,
+            stepId: "parts_labor",
+          },
+          {
+            label: "Calibration",
+            icon: <CalibrationIcon />,
+            stepId: "calibration",
+          },
+          { label: "Invoice", icon: <InvoiceIcon />, stepId: "invoice" },
+        ].map((button) => {
+          // Check if this section is complete based on step status
+          const relatedStepModule = STEP_MODULES[button.stepId];
+
+          const isCompleted = relatedStepModule
+            ? checkedSteps.has(relatedStepModule.id) ||
+              (() => {
+                const stepStatus = getStepStatusWithOverride(
+                  relatedStepModule,
+                  caseData,
+                  checkedSteps
+                );
+                return (
+                  stepStatus.status === "approved" ||
+                  stepStatus.status === "auto-approved"
+                );
+              })()
+            : false;
+
+          return (
+            <Button
+              key={button.stepId}
+              variant="outlined"
+              size="medium"
+              startIcon={button.icon}
+              onClick={() => {
+                // Scroll to step section
+                const element = document.getElementById(
+                  `step-${button.stepId}`
+                );
+                if (element) {
+                  element.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+                }
+              }}
+              sx={{
+                borderRadius: 1.5,
+                textTransform: "none",
+                fontWeight: 500,
+                px: 2,
+                py: 0.75,
+                fontSize: "0.8rem",
+                whiteSpace: "nowrap",
+                minWidth: "auto",
+                minHeight: "auto",
+                height: 32,
+                backgroundColor: isCompleted
+                  ? "rgba(76, 175, 80, 0.04)"
+                  : "transparent",
+                borderColor: isCompleted
+                  ? "rgba(76, 175, 80, 0.5)"
+                  : "rgba(158, 158, 158, 0.3)",
+                color: isCompleted ? "rgba(56, 142, 60, 0.9)" : "text.primary",
+                "&:hover": {
+                  backgroundColor: isCompleted
+                    ? "rgba(76, 175, 80, 0.08)"
+                    : "rgba(158, 158, 158, 0.04)",
+                  borderColor: isCompleted
+                    ? "rgba(76, 175, 80, 0.7)"
+                    : "rgba(158, 158, 158, 0.5)",
+                },
+                "& .MuiButton-startIcon": {
+                  fontSize: 16,
+                  marginRight: 0.75,
+                  color: isCompleted
+                    ? "rgba(76, 175, 80, 0.8)"
+                    : "rgba(158, 158, 158, 0.7)",
+                },
+              }}
+            >
+              {button.label}
+            </Button>
+          );
+        })}
       </Box>
 
       {/* Reject Dialog */}
@@ -1838,10 +2122,10 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography variant="h6" component="div">
-            Reject Case to Workshop
+            Return Case to Workshop
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Please provide a reason for rejecting this case back to the workshop
+            Please provide a reason for returning this case back to the workshop
           </Typography>
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
@@ -1850,7 +2134,7 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
             multiline
             rows={4}
             fullWidth
-            label="Rejection Reason"
+            label="Return Reason"
             placeholder="Describe what needs to be fixed or improved..."
             value={rejectComment}
             onChange={(e) => setRejectComment(e.target.value)}
@@ -1882,7 +2166,7 @@ const CaseHeader = ({ caseData, progressPercentage }) => {
               ml: 1,
             }}
           >
-            Reject to Workshop
+            Return to Workshop
           </Button>
         </DialogActions>
       </Dialog>
